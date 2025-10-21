@@ -14,6 +14,7 @@ export const configSchema = z.object({
   server: z.object({
     nodeEnv: z.enum(['development', 'production', 'test']),
     port: z.number().int().positive(),
+    host: z.string(),
     allowedOrigins: z.array(z.string()),
   }),
   database: z.object({

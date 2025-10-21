@@ -15,7 +15,8 @@ const rawConfig = {
   server: {
     nodeEnv: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT || '3000', 10),
-    allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(','),
+    host: process.env.HOST || 'localhost',
+    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(','),
   },
   database: {
     encryptionKey: process.env.DB_ENCRYPTION_KEY || '',
