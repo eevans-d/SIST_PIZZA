@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "Business Metrics - KPIs",
+    "tags": ["business", "kpi", "operacional"],
+    "timezone": "browser",
+    "refresh": "1m",
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Comandas creadas (últimas 24h)",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(comandas_created_total[24h]))"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Ingresos por zona",
+        "type": "graph",
+        "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(commands_revenue[1h])) by (zone)"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Cumplimiento de SLA (%)",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "((sum(comandas_completed_total) - sum(comandas_sla_breach_total)) / sum(comandas_completed_total)) * 100"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Comandas por estado",
+        "type": "piechart",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(comandas_status) by (status)"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Ruptura de SLA por zona",
+        "type": "table",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(comandas_sla_breach_total) by (zona)"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Métodos de pago - Tasa de éxito",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(payment_attempts_total{status='success'}[1h])) by (metodo)"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Tickets de soporte pending",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "support_tickets_pending"
+          }
+        ]
+      }
+    ]
+  }
+}

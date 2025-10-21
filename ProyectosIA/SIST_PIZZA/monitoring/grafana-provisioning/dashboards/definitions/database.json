@@ -1,0 +1,71 @@
+{
+  "dashboard": {
+    "title": "Database - PostgreSQL & Redis",
+    "tags": ["database", "postgresql", "redis", "infrastructure"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Conexiones activas",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "db_connections_active",
+            "legendFormat": "{{ estado }}"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Duración de queries",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket[5m])) by (le, tabla))",
+            "legendFormat": "P95 - {{ tabla }}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Cache Hit Ratio",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "(sum(cache_hits_total) / (sum(cache_hits_total) + sum(cache_misses_total))) * 100"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Redis Memory Usage",
+        "type": "gauge",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "(redis_memory_used_bytes / redis_memory_max_bytes) * 100"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Query count por tabla",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(db_query_duration_seconds_count[1h])) by (tabla))"
+          }
+        ]
+      }
+    ]
+  }
+}

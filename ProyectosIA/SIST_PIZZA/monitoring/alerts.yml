@@ -1,0 +1,154 @@
+groups:
+  - name: sist_pizza_alerts
+    interval: 30s
+    rules:
+      # API Error Rate
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)) /
+          (sum(rate(http_requests_total[5m])) by (job)) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Alta tasa de errores en {{ $labels.job }}"
+          description: "{{ $value | humanizePercentage }} de errores 5xx en los últimos 5 minutos"
+
+      # API Latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 1
+        for: 3m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Latencia alta en {{ $labels.job }}"
+          description: "P95 latencia: {{ $value | humanizeDuration }}"
+
+      # Database Connections
+      - alert: HighDatabaseConnections
+        expr: |
+          pg_stat_activity_count > 20
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Demasiadas conexiones activas a PostgreSQL"
+          description: "Conexiones actuales: {{ $value }}"
+
+      # Database Query Performance
+      - alert: SlowDatabaseQueries
+        expr: |
+          pg_slow_queries_total > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Queries lentas detectadas en PostgreSQL"
+          description: "Total de queries lentas: {{ $value }}"
+
+      # Redis Memory Usage
+      - alert: HighRedisMemory
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Uso de memoria alto en Redis"
+          description: "Uso actual: {{ $value | humanizePercentage }}"
+
+      # Service Down
+      - alert: ServiceDown
+        expr: |
+          up{job=~"backend|postgres|redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "{{ $labels.job }} está caído"
+          description: "{{ $labels.instance }} no está respondiendo desde hace 1 minuto"
+
+      # Pod/Container Restart
+      - alert: FrequentPodRestarts
+        expr: |
+          increase(container_last_seen[15m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          component: orchestration
+        annotations:
+          summary: "{{ $labels.pod_name }} reiniciándose frecuentemente"
+          description: "{{ $value }} reinicios en los últimos 15 minutos"
+
+      # Disk Usage
+      - alert: HighDiskUsage
+        expr: |
+          (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Espacio en disco bajo en {{ $labels.device }}"
+          description: "Solo {{ $value | humanizePercentage }} disponible"
+
+  # Business metrics alerts
+  - name: sist_pizza_business
+    interval: 1m
+    rules:
+      # Low order rate
+      - alert: LowOrderRate
+        expr: |
+          rate(comandas_created_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "Tasa de órdenes baja"
+          description: "{{ $value | humanize }}/min en últimos 5 minutos"
+
+      # Payment failures
+      - alert: HighPaymentFailureRate
+        expr: |
+          (sum(rate(payment_attempts_total{status="failed"}[5m])) by (payment_method)) /
+          (sum(rate(payment_attempts_total[5m])) by (payment_method)) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: payments
+        annotations:
+          summary: "Tasa alta de pagos fallidos en {{ $labels.payment_method }}"
+          description: "{{ $value | humanizePercentage }} de intentos fallando"
+
+      # SLA Breaches
+      - alert: SLABreach
+        expr: |
+          (sum(comandas_sla_breach_total) by (zone)) /
+          (sum(comandas_completed_total) by (zone)) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: operations
+        annotations:
+          summary: "Ruptura de SLA en zona {{ $labels.zone }}"
+          description: "{{ $value | humanizePercentage }} de comandas excediendo SLA"
+
+      # Support backlog
+      - alert: SupportBacklogHigh
+        expr: |
+          support_tickets_pending > 20
+        for: 30m
+        labels:
+          severity: warning
+          component: support
+        annotations:
+          summary: "Acumulación en tickets de soporte"
+          description: "{{ $value }} tickets pendientes"
