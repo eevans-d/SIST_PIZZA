@@ -1,0 +1,293 @@
+🧠 INSTRUCCIÓN GLOBAL PARA TODOS LOS ARCHIVOS
+(Incluir como comentario al inicio de cada archivo generado)
+
+ts
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+⌄
+/**
+ * 🧠 INSTRUCCIONES PARA GITHUB COPILOT:
+ * Este archivo forma parte del sistema de gestión para cocina oculta.
+ * - Si detectas que el entorno es limitado (ej: sin internet, sin API key),
+ *   implementa un modo degradado seguro.
+ * - Si hay ambigüedad en los requisitos, prioriza:
+ *   1. Seguridad > 2. Experiencia de usuario > 3. Simplicidad > 4. Features.
+ * - Si necesitas desviarte del prompt, documenta el porqué en un comentario.
+ * - Siempre alinea con la "Constitución IA" (ia_constitution_report.md).
+ */
+🔧 PROMPT 1 – Setup de Supabase - Migraciones SQL
+ARCHIVO: supabase/migrations/20250115000000_initial_schema.sql
+REQUISITOS ACTUALIZADOS:
+
+En clientes y pedidos, nunca almacenar PII en texto claro → usar encriptación o redactar antes de persistir.
+Agregar RLS en tablas sensibles (pedidos, clientes, pagos).
+Crear políticas:
+"Clientes ven solo sus pedidos" en pedidos (SELECT)
+"Solo service role puede insertar" en pedidos (INSERT)
+Crear índices para optimización:
+idx_pedidos_estado_created
+idx_comandas_estado
+idx_logs_level (solo errores críticos)
+Secuencia diaria: CREATE SEQUENCE seq_orden_dia START 1
+Trigger update_updated_at() para tablas con timestamps
+Insertar registro inicial en system_config
+Nunca enviar PII real a Claude → el contexto debe usar tokens o zonas (zona: 'centro')
+🔧 PROMPT 2 – Datos de Prueba - Seed SQL
+ARCHIVO: supabase/migrations/20250115000001_seed_data.sql
+SIN CAMBIOS.
+✅ Ya incluye datos realistas de Necochea, UUIDs, formatos argentinos y estados de pedidos.
+
+🔧 PROMPT 3 – Cliente TypeScript para Supabase
+ARCHIVO: backend/src/lib/supabase.ts
+REQUISITOS ACTUALIZADOS:
+
+Exportar dos tipos: Cliente (interno) y ClienteRedactado (para logs/IA)
+En ClienteRedactado:
+ts
+
+
+1
+2
+telefono: string; // Ej: "***7890"
+direccion_default?: string; // Ej: "[REDACTED]"
+🔧 PROMPT 4 – Variables de Entorno y Configuración
+ARCHIVOS: .env.example, src/config/index.ts, src/config/validate.ts
+SIN CAMBIOS.
+✅ Ya usa zod, valida formatos y lanza errores descriptivos.
+
+🔧 PROMPT 5 – Sistema de Logging Estructurado
+ARCHIVO: backend/src/lib/logger.ts
+REQUISITOS ACTUALIZADOS:
+
+En redactPII():
+Teléfono: +5492234XXXXXX → ***XXXX
+Dirección: cualquier string con números/calle → [REDACTED]
+Email: ***@***.***
+Nunca loggear PII sin redactar, ni siquiera en desarrollo.
+🔧 PROMPT 6 – Servidor Express Base
+ARCHIVO: backend/src/server.ts
+SIN CAMBIOS.
+✅ Ya incluye CORS restrictivo, helmet, morgan, manejo global de errores y graceful shutdown.
+
+🔧 PROMPT 7 – Validación de Webhooks - Middleware
+ARCHIVO: backend/src/middlewares/validateWebhook.ts
+REQUISITOS ACTUALIZADOS:
+
+Agregar validación de IP:
+ts
+
+
+1
+function validateIP(allowedIPs: string[], reqIP: string): boolean
+En chatwootWebhook: validar IP contra whitelist oficial de Chatwoot.
+En modoWebhook: validar IP contra whitelist de MODO.
+🔧 PROMPT 8 – Cliente de Claude API
+ARCHIVO: backend/src/services/claude.ts
+REQUISITOS ACTUALIZADOS:
+
+Nunca enviar PII real a Claude. Reemplazar por:
+ts
+
+
+1
+2
+3
+4
+5
+⌄
+contextoIA = {
+  cliente_tipo: cliente.es_vip ? 'vip' : 'nuevo',
+  pedidos_previos_count: cliente.pedidos_count,
+  zona: determinarZona(cliente.direccion) // 'centro', 'norte', 'sur'
+}
+Agregar límite: máximo $0.10 USD por sesión (~6.6K tokens output).
+🔧 PROMPT 9 – Cliente de MODO API
+ARCHIVO: backend/src/services/modo.ts
+REQUISITOS ACTUALIZADOS:
+
+Validar monto con ±$1 ARS de margen.
+Verificar que no es duplicate usando payment_id único.
+Si webhook es duplicado, responder 200 OK sin procesar.
+🔧 PROMPT 10 – Cliente de Chatwoot API
+ARCHIVO: backend/src/services/chatwoot.ts
+SIN CAMBIOS.
+✅ Ya incluye rate limiting, retry y queue interna.
+
+🔧 PROMPT 11 – Workflow Handler - Recepción de Mensajes
+ARCHIVO: backend/src/workflows/recepcionMensajes.ts
+REQUISITOS ACTUALIZADOS:
+
+Si dirección no está en zonas_cobertura, escalar a humano.
+No intentar procesar pedidos fuera de zona automáticamente.
+🔧 PROMPT 12 – Workflow Handler - Toma de Pedido
+ARCHIVO: backend/src/workflows/tomaPedido.ts
+REQUISITOS ACTUALIZADOS:
+
+Validar que items existen en menú y están disponible = true.
+Si tipo_entrega === 'delivery', validar que dirección está en zonas_cobertura.
+Si no, escalar a humano.
+🔧 PROMPT 13 – Workflow Handler - Generación de Pagos
+ARCHIVO: backend/src/workflows/generarPago.ts
+REQUISITOS ACTUALIZADOS:
+
+Si canal === 'pedidosya' y status === 'paid', no generar link, solo marcar como confirmado.
+Si status === 'pending', iniciar polling (máx. 10 min).
+🔧 PROMPT 14 – Workflow Handler - Gestión de Comandas
+ARCHIVO: backend/src/workflows/gestionComandas.ts
+REQUISITOS ACTUALIZADOS:
+
+Validar transiciones de estado:
+nueva → preparando → lista
+Si transición inválida, retornar error 400.
+🔧 PROMPT 15 – Workflow Handler - Notificaciones
+ARCHIVO: backend/src/workflows/notificaciones.ts
+REQUISITOS ACTUALIZADOS:
+
+No reproducir alertas sonoras fuera de horario de atención (18:00–01:00).
+Usar esHorarioLaboral() antes de enviar notificación con sonido.
+🔧 PROMPT 16 – Setup de Proyecto React PWA
+ARCHIVO: frontend/vite.config.ts, manifest.json, etc.
+SIN CAMBIOS.
+✅ Ya configura PWA, Supabase, Zustand y offline support.
+
+🔧 PROMPT 17 – Componente ComandaCard
+ARCHIVO: frontend/src/components/ComandaCard.tsx
+SIN CAMBIOS.
+✅ Ya incluye accesibilidad, colores por tiempo, botones táctiles.
+
+🔧 PROMPT 18 – Componente ColumnaComandas
+ARCHIVO: frontend/src/components/ColumnaComandas.tsx
+SIN CAMBIOS.
+✅ Ya ordena por prioridad, scroll automático y empty state.
+
+🔧 PROMPT 19 – Vista Principal - Dashboard de Comandas
+ARCHIVO: frontend/src/pages/Comandas.tsx
+REQUISITOS ACTUALIZADOS:
+
+Si reconexión tarda >5 min, forzar refetch y mostrar banner: “Sincronizando estado…”.
+🔧 PROMPT 20 – Hook Custom - useRealtimeComandas
+ARCHIVO: frontend/src/hooks/useRealtimeComandas.ts
+SIN CAMBIOS.
+✅ Ya maneja suscripción, eventos, reconexión y optimizaciones.
+
+🔧 PROMPT 21 – Componente Header con Indicadores
+ARCHIVO: frontend/src/components/Header.tsx
+SIN CAMBIOS.
+✅ Ya incluye reloj, indicador de conexión, botones táctiles.
+
+🔧 PROMPT 22 – Modal de Configuración
+ARCHIVO: frontend/src/components/ConfigModal.tsx
+SIN CAMBIOS.
+✅ Ya incluye validaciones, persistencia y preview de sonido.
+
+🔧 PROMPT 23 – Sistema de Alertas Sonoras
+ARCHIVO: frontend/src/lib/soundSystem.ts
+REQUISITOS ACTUALIZADOS:
+
+Desactivar sonidos automáticos fuera de 18:00–01:00.
+Agregar función esHorarioLaboral().
+🔧 PROMPT 24 – Utilidades de Tiempo y Formato
+ARCHIVO: frontend/src/utils/timeUtils.ts
+SIN CAMBIOS.
+✅ Ya incluye formateo, colores por tiempo, cálculo de estimados.
+
+🔧 PROMPT 25 – Tests Unitarios para PWA
+ARCHIVOS: *.test.tsx
+SIN CAMBIOS.
+✅ Ya cubre casos de tiempo, estado, ordenamiento y accesibilidad.
+
+🔧 PROMPT 26 – Integración con PedidosYa API
+ARCHIVO: backend/src/services/pedidosya.ts
+SIN CAMBIOS.
+✅ Ya maneja OAuth2, polling, mapeo y errores.
+
+🔧 PROMPT 27 – Integración con Twilio (Opcional)
+ARCHIVO: backend/src/services/twilio.ts
+REQUISITOS ACTUALIZADOS:
+
+Marcar como “Etapa 3 – Avanzado”.
+Si Twilio no está configurado, desactivar silenciosamente.
+🔧 PROMPT 28 – Integración con Sentry para Error Tracking
+ARCHIVOS: backend/src/lib/sentry.ts, frontend/src/lib/sentry.ts
+SIN CAMBIOS.
+✅ Ya redacta PII, filtra secrets y captura errores estructurados.
+
+🔧 PROMPT 29 – Integración con PostHog para Analytics
+ARCHIVOS: posthog.ts, useTracking.ts
+SIN CAMBIOS.
+✅ Ya incluye identificación, tracking de eventos y feature flags.
+
+🔧 PROMPT 30 – Generación de PDFs para Comandas
+ARCHIVO: backend/src/services/pdfGenerator.ts
+REQUISITOS ACTUALIZADOS:
+
+QR debe contener:
+json
+
+
+1
+{ "pedido_id": "uuid", "action": "finalizar" }
+🔧 PROMPT 31 – Scripts de Deployment
+ARCHIVOS: scripts/*.sh, .github/workflows/deploy.yml
+SIN CAMBIOS.
+✅ Ya valida branch, tests, builds y deploya a Railway/Vercel.
+
+🔧 PROMPT 32 – Tests de Integración End-to-End
+ARCHIVO: tests/e2e/pedido-completo.spec.ts
+REQUISITOS ACTUALIZADOS:
+
+Incluir test: mensaje ambiguo → confianza < 0.7 → escalar a humano.
+🔧 PROMPT 33 – Documentación de API (OpenAPI/Swagger)
+ARCHIVO: docs/api/openapi.yaml
+SIN CAMBIOS.
+✅ Ya incluye endpoints, schemas, security y ejemplos.
+
+🔧 PROMPT 34 – README y Documentación de Setup
+ARCHIVO: README.md
+SIN CAMBIOS.
+✅ Ya es completo, claro y con ejemplos de código.
+
+🔧 PROMPT 35 – Monitoring Dashboard con Grafana
+ARCHIVO: monitoring/grafana-dashboard.json
+SIN CAMBIOS.
+✅ Ya incluye métricas de sistema, negocio, IA y pagos.
+
+🔧 PROMPT 36 – Script de Backup Automático
+ARCHIVO: scripts/backup.sh
+SIN CAMBIOS.
+✅ Ya encripta, sube a cloud, limpia y verifica integridad.
+
+🔧 PROMPT 37 – Health Checks y Monitoreo de Servicios
+ARCHIVO: backend/src/services/healthCheck.ts
+SIN CAMBIOS.
+✅ Ya incluye checks de BD, Claude, MODO, memoria, disco y alertas.
+
+🔧 PROMPT 38 – Script de Migración de Datos
+ARCHIVO: scripts/migrate-data.ts
+SIN CAMBIOS.
+✅ Ya incluye up/down, rollback, CLI y logging.
+
+🔧 PROMPT 39 – Configuración de Linters y Formatters
+ARCHIVOS: .eslintrc.js, .prettierrc.js, etc.
+SIN CAMBIOS.
+✅ Ya sigue Airbnb, TypeScript, Prettier y Husky.
+
+🔧 PROMPT 40 – Checklist Final de Launch
+ARCHIVO: docs/launch-checklist.md
+REQUISITOS ACTUALIZADOS:
+
+En Seguridad:
+☑️ PII redactada en logs y contexto de IA
+☑️ Validación de zona de cobertura activa
+En Testing:
+☑️ Flujo de dirección fuera de zona → escala a humano
