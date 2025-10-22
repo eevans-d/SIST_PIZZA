@@ -81,19 +81,71 @@ export function createApp(): Express {
     });
   });
 
+  // Backwards-compatible alias usado por scripts y tests externos
+  app.get('/api/health', async (req: Request, res: Response) => {
+    const health = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: config.server.nodeEnv,
+      uptime: Math.floor(process.uptime()),
+      database: 'checking...',
+      integrations: {
+        supabase: false,
+        claude: false,
+        modo: false,
+        chatwoot: false,
+      },
+    };
+
+    try {
+      // Verificar conexión a Supabase
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        config.supabase.url,
+        config.supabase.anonKey
+      );
+      
+      const { error } = await supabase
+        .from('menu_items')
+        .select('count')
+        .limit(1);
+      
+      if (!error) {
+        health.database = 'ok';
+        health.integrations.supabase = true;
+      } else {
+        health.database = 'error';
+      }
+    } catch (err) {
+      health.database = 'error';
+    }
+
+    // Verificar integraciones opcionales
+    const { isClaudeEnabled, isModoEnabled, isChatwootEnabled } = await import('./config');
+    health.integrations.claude = isClaudeEnabled;
+    health.integrations.modo = isModoEnabled;
+    health.integrations.chatwoot = isChatwootEnabled;
+
+    const statusCode = health.database === 'ok' ? 200 : 503;
+    res.status(statusCode).json(health);
+  });
+
   app.get('/health/ready', (req: Request, res: Response) => {
     // TODO: Verificar conexión a Supabase, Claude API, etc.
     res.json({ ready: true });
   });
 
   // ============================================================================
-  // RUTAS (PLACEHOLDER)
+  // RUTAS DE API
   // ============================================================================
 
-  // TODO: Agregar rutas de API aquí
+  // Webhook N8N para pedidos procesados por Claude
+  const webhookN8N = require('./workflows/webhookN8N').default;
+  app.use(webhookN8N);
+
+  // TODO: Agregar más rutas
   // app.post('/api/webhooks/chatwoot', ...);
   // app.post('/api/webhooks/modo', ...);
-  // app.post('/api/pedidos', ...);
 
   // ============================================================================
   // 404 HANDLER

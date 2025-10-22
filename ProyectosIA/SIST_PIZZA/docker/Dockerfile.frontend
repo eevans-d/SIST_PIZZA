@@ -1,0 +1,50 @@
+# Multi-stage build para frontend
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar package*.json
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm ci
+
+# Copiar código fuente
+COPY . .
+
+# Build con Vite
+RUN npm run build
+
+# Stage 2: Serve
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instalar servidor estático
+RUN npm install -g serve
+
+# Crear usuario no-root
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copiar dist del builder
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
+# Cambiar a usuario nodejs
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
+
+# Variables de entorno
+ENV NODE_ENV=production \
+    PORT=3000
+
+# Exponer puerto
+EXPOSE 3000
+
+# Iniciar aplicación
+CMD ["serve", "-s", "dist", "-l", "3000"]

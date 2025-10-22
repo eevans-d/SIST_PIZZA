@@ -1,0 +1,300 @@
+{
+  "name": "SIST_PIZZA - WhatsApp a Pedido",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-pedido",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-whatsapp",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "whatsapp-pedido"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "telefono",
+              "value": "={{ $json.body.from }}"
+            },
+            {
+              "name": "mensaje",
+              "value": "={{ $json.body.body }}"
+            },
+            {
+              "name": "nombre_contacto",
+              "value": "={{ $json.body.pushName || 'Cliente' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extraer-datos-waha",
+      "name": "Extraer Datos WAHA",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "text": "=ERES UN ASISTENTE DE PIZZERÍA EN NECOCHEA, ARGENTINA.\n\nCONTEXTO:\n- El cliente envió este mensaje por WhatsApp: \"{{ $json.mensaje }}\"\n- Nombre del contacto: {{ $json.nombre_contacto }}\n- Teléfono: {{ $json.telefono }}\n\nMENÚ DISPONIBLE:\nPIZZAS:\n- Muzzarella: $3500\n- Napolitana: $4200\n- Calabresa: $4800\n- Jamón y Morrones: $4500\n- Fugazzeta: $4000\n- Especial de la Casa: $5500\n- Cuatro Quesos: $5200\n\nEMPANADAS:\n- Carne: $600\n- Jamón y Queso: $550\n- Pollo: $580\n- Verdura: $520\n- Roquefort: $620\n\nBEBIDAS:\n- Coca-Cola 1.5L: $1200\n- Coca-Cola 2.25L: $1800\n- Sprite 1.5L: $1200\n- Fanta 1.5L: $1200\n- Agua Mineral 1.5L: $800\n- Cerveza Quilmes 1L: $1500\n\nTU TAREA:\n1. Analiza el mensaje del cliente\n2. Si es un pedido válido, extrae:\n   - Items solicitados (nombre y cantidad)\n   - Dirección de entrega\n   - Notas especiales\n3. Responde en formato JSON:\n\nSI ES UN PEDIDO:\n{\n  \"es_pedido\": true,\n  \"items\": [\n    {\"nombre\": \"Muzzarella\", \"cantidad\": 2},\n    {\"nombre\": \"Coca-Cola 1.5L\", \"cantidad\": 1}\n  ],\n  \"direccion\": \"Calle extraída del mensaje\",\n  \"notas\": \"Sin aceitunas\",\n  \"respuesta_cliente\": \"¡Perfecto! Tu pedido: 2 Muzzarella, 1 Coca-Cola 1.5L. Total: $8200. Llegamos en 30-40 min a [dirección]. ¿Confirmas?\"\n}\n\nSI NO ES UN PEDIDO (consulta/saludo):\n{\n  \"es_pedido\": false,\n  \"respuesta_cliente\": \"¡Hola! Soy el asistente de la pizzería. ¿En qué puedo ayudarte? Puedes ver nuestro menú o hacer un pedido.\"\n}\n\nRESPONDE SOLO CON EL JSON, SIN MARKDOWN NI EXPLICACIONES.",
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1000
+        }
+      },
+      "id": "claude-parser",
+      "name": "Claude - Parsear Pedido",
+      "type": "n8n-nodes-base.anthropic",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "anthropicApi": {
+          "id": "claude-api-credential",
+          "name": "Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldName": "={{ $json.choices[0].message.content }}",
+        "include": "none"
+      },
+      "id": "parsear-json-claude",
+      "name": "Parsear JSON Claude",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.es_pedido }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "es-pedido",
+      "name": "¿Es Pedido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.BACKEND_URL }}/api/webhooks/n8n/pedido",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "cliente",
+              "value": "={{ { \"nombre\": $node[\"Extraer Datos WAHA\"].json[\"nombre_contacto\"], \"telefono\": $node[\"Extraer Datos WAHA\"].json[\"telefono\"], \"direccion\": $json.direccion } }}"
+            },
+            {
+              "name": "items",
+              "value": "={{ $json.items }}"
+            },
+            {
+              "name": "notas",
+              "value": "={{ $json.notas || '' }}"
+            },
+            {
+              "name": "origen",
+              "value": "whatsapp"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-a-backend",
+      "name": "Enviar a Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://waha:3000/api/sendText",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $node[\"Extraer Datos WAHA\"].json[\"telefono\"] }}@c.us"
+            },
+            {
+              "name": "text",
+              "value": "={{ $node[\"Parsear JSON Claude\"].json[\"respuesta_cliente\"] }}"
+            },
+            {
+              "name": "session",
+              "value": "default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "responder-whatsapp-pedido",
+      "name": "Responder WhatsApp (Pedido)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://waha:3000/api/sendText",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $node[\"Extraer Datos WAHA\"].json[\"telefono\"] }}@c.us"
+            },
+            {
+              "name": "text",
+              "value": "={{ $node[\"Parsear JSON Claude\"].json[\"respuesta_cliente\"] }}"
+            },
+            {
+              "name": "session",
+              "value": "default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "responder-whatsapp-consulta",
+      "name": "Responder WhatsApp (Consulta)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "response-webhook",
+      "name": "Respuesta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Datos WAHA": {
+      "main": [
+        [
+          {
+            "node": "Claude - Parsear Pedido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Parsear Pedido": {
+      "main": [
+        [
+          {
+            "node": "Parsear JSON Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear JSON Claude": {
+      "main": [
+        [
+          {
+            "node": "¿Es Pedido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Pedido?": {
+      "main": [
+        [
+          {
+            "node": "Enviar a Backend",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder WhatsApp (Consulta)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar a Backend": {
+      "main": [
+        [
+          {
+            "node": "Responder WhatsApp (Pedido)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder WhatsApp (Pedido)": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder WhatsApp (Consulta)": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "sist-pizza-whatsapp-pedido",
+  "tags": []
+}

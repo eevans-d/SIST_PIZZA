@@ -1,37 +1,24 @@
 import 'dotenv/config';
-import { configSchema, Config } from './validate';
+import { validateConfig } from './validate';
 
-const rawConfig = {
-  supabase: {
-    url: process.env.SUPABASE_URL,
-    anonKey: process.env.SUPABASE_ANON_KEY,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  },
-  claude: {
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
-    maxTokensPerSession: parseInt(process.env.MAX_TOKENS_PER_SESSION || '6600', 10),
-  },
-  server: {
-    nodeEnv: process.env.NODE_ENV || 'development',
-    port: parseInt(process.env.PORT || '3000', 10),
-    host: process.env.HOST || 'localhost',
-    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(','),
-  },
-  database: {
-    encryptionKey: process.env.DB_ENCRYPTION_KEY || '',
-  },
-  logging: {
-    level: process.env.LOG_LEVEL || 'info',
-  },
-};
+export const config = validateConfig(process.env);
 
-// Validar configuración
-const result = configSchema.safeParse(rawConfig);
+// Helpers para verificar integraciones
+export const isDevelopment = config.server.nodeEnv === 'development';
+export const isProduction = config.server.nodeEnv === 'production';
+export const isTest = config.server.nodeEnv === 'test';
 
-if (!result.success) {
-  console.error('❌ Error de configuración:', result.error.format());
-  process.exit(1);
-}
+export const isClaudeEnabled = !!config.claude?.apiKey;
+export const isModoEnabled = !!config.modo?.apiKey;
+export const isChatwootEnabled = !!config.chatwoot?.apiKey;
 
-export const config: Config = result.data;
+// Log inicial
+console.log('✅ Configuración cargada:', {
+  environment: config.server.nodeEnv,
+  port: config.server.port,
+  supabase: '✓',
+  claude: isClaudeEnabled ? '✓' : '✗ (mock)',
+  modo: isModoEnabled ? '✓' : '✗ (mock)',
+  chatwoot: isChatwootEnabled ? '✓' : '✗ (disabled)',
+});
+

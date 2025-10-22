@@ -68,7 +68,8 @@ let claudeClient: Anthropic | null = null;
 
 export function getClaudeClient(): Anthropic {
   if (!claudeClient) {
-    if (!config.claude.apiKey || !config.claude.apiKey.startsWith('sk-ant-')) {
+    // Verificar si Claude está habilitado y configurado
+    if (!config.claude?.apiKey || !config.claude.apiKey.startsWith('sk-ant-')) {
       throw new Error('ANTHROPIC_API_KEY configuration missing or invalid');
     }
 
@@ -97,11 +98,12 @@ export async function llamarClaude(
     const client = getClaudeClient();
     const maxTokens = options?.maxTokens || 500;
 
-    // Validar límite de tokens por sesión
-    if (maxTokens > config.claude.maxTokensPerSession) {
+    // Validar límite de tokens por sesión (usar valor por defecto si no está configurado)
+    const maxTokensPerSession = config.claude?.maxTokensPerSession || 6600;
+    if (maxTokens > maxTokensPerSession) {
       safeLogger.warn('Token limit exceeded for session', {
         requested: maxTokens,
-        limit: config.claude.maxTokensPerSession,
+        limit: maxTokensPerSession,
       });
 
       return 'Lo siento, hubo un error en el procesamiento. Por favor, reintentar.';
@@ -115,8 +117,9 @@ export async function llamarClaude(
       maxTokens,
     });
 
+    const model = config.claude?.model || 'claude-3-5-sonnet-20241022';
     const message = await (client as any).messages.create({
-      model: config.claude.model,
+      model,
       max_tokens: maxTokens,
       system: SYSTEM_PROMPTS[flujo],
       messages: [

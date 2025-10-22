@@ -1,0 +1,61 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.node_repl_history
+
+# TypeScript
+*.tsbuildinfo
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.canales.example
+
+# Docker
+.docker/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python (si hay scripts de testing)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+*.egg-info/
+
+# Sistema local
+.local/
+.vscode-server/
+.nvm/
+.cache/
+
+# Temporal
+tmp/
+temp/
+*.tmp
+
+# Archivos de zona (Zone.Identifier)
+*.Zone.Identifier
+
+# Directorio ProyectosIA (evitar submódulos no deseados)
+ProyectosIA/
