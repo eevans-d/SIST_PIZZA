@@ -5,11 +5,22 @@
 
 ---
 
-## 🚀 INICIO RÁPIDO
+## 🚀 INICIO RÁPIDO - SETUP AUTOMÁTICO ⭐
 
-1. [`RESUMEN_PROGRESO.md`](./RESUMEN_PROGRESO.md) - **Lee esto primero** (2 min)
-2. [`GUIA_SUPABASE_SETUP.md`](./GUIA_SUPABASE_SETUP.md) - Setup DB (15 min)
-3. [`GUIA_MODULO1_CANALES.md`](./GUIA_MODULO1_CANALES.md) - Setup WhatsApp (30 min)
+**NUEVO:** Scripts automáticos para configuración rápida
+
+1. **[`SETUP_RESUMEN.md`](./SETUP_RESUMEN.md)** - 📊 Resumen visual (5 min) ⭐ **EMPIEZA AQUÍ**
+2. **[`CHECKLIST_EJECUCION.md`](./CHECKLIST_EJECUCION.md)** - 📋 Paso a paso detallado (30 min)
+3. **[`REFERENCIA_HERRAMIENTAS.md`](./REFERENCIA_HERRAMIENTAS.md)** - 🛠️ Catálogo de scripts
+4. **[`ANALISIS_OPTIMIZACION.md`](./ANALISIS_OPTIMIZACION.md)** - 📈 Plan de mejoras + Quick Wins
+
+---
+
+## 📚 DOCUMENTACIÓN ORIGINAL (Referencia)
+
+- [`GUIA_SUPABASE_SETUP.md`](./GUIA_SUPABASE_SETUP.md) - Setup manual Supabase (si prefieres)
+- [`RESUMEN_PROGRESO.md`](./RESUMEN_PROGRESO.md) - Estado del proyecto
+- [`BLUEPRINT_EJECUTABLE.md`](./BLUEPRINT_EJECUTABLE.md) - Plan original
 
 ---
 
