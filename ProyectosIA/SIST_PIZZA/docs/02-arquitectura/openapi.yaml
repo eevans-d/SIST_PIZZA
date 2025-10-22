@@ -1,0 +1,429 @@
+openapi: 3.0.0
+info:
+  title: SIST_PIZZA API
+  description: >-
+    API REST para SIST_PIZZA - Sistema de gestión de pizzería con WhatsApp, N8N y Claude AI.
+    Documentación completa de endpoints, esquemas y errores.
+  version: '1.0.0'
+  contact:
+    name: Desarrollo SIST_PIZZA
+    email: dev@sist-pizza.local
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:4000
+    description: Servidor de desarrollo
+  - url: https://api.sist-pizza.local
+    description: Servidor de producción
+
+tags:
+  - name: Healthchecks
+    description: Endpoints para verificar salud del sistema
+  - name: Webhooks
+    description: Webhooks para recibir eventos de sistemas externos
+
+paths:
+  /health:
+    get:
+      tags:
+        - Healthchecks
+      summary: Health check mínimo
+      description: >-
+        Verificación simple del servidor. No requiere conexión a BD.
+        Útil para load balancers y monitoring básico.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Servidor operacional
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                    description: Segundos desde el inicio del servidor
+                required:
+                  - status
+                  - timestamp
+                  - uptime
+              example:
+                status: ok
+                timestamp: '2025-10-22T10:30:45.123Z'
+                uptime: 3600
+
+  /api/health:
+    get:
+      tags:
+        - Healthchecks
+      summary: Health check completo
+      description: >-
+        Verificación completa del sistema incluyendo conexión a bases de datos
+        e integraciones externas.
+      operationId: getApiHealth
+      responses:
+        '200':
+          description: Todos los servicios operacionales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Algún servicio no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/health/ready:
+    get:
+      tags:
+        - Healthchecks
+      summary: Verificar readiness para pedidos
+      description: >-
+        Verifica que el sistema está listo para recibir pedidos.
+        Específicamente, comprueba que Supabase está disponible.
+      operationId: getHealthReady
+      responses:
+        '200':
+          description: Sistema listo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+        '503':
+          description: Sistema no listo (BD caída, etc)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+
+  /api/webhooks/n8n/pedido:
+    post:
+      tags:
+        - Webhooks
+      summary: Crear nuevo pedido
+      description: >-
+        Webhook que recibe pedidos procesados por N8N + Claude AI.
+        El flujo es: WhatsApp → WAHA → N8N (con Claude) → Este endpoint.
+      operationId: createPedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoN8NRequest'
+            example:
+              cliente:
+                nombre: Juan Pérez
+                telefono: '+54901234567'
+                direccion: Zona Norte, Barrio A, Calle 123
+              items:
+                - nombre: pizza clásica
+                  cantidad: 2
+                - nombre: coca cola
+                  cantidad: 1
+              notas: Sin cebolla en la pizza
+              origen: whatsapp
+      responses:
+        '201':
+          description: Pedido creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PedidoN8NResponse'
+        '400':
+          description: Validación fallida o item no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: "Item 'Pizza Especial' no encontrado o no disponible"
+                details:
+                  - field: items[0].nombre
+                    message: Producto no existe
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    # ==========================================================================
+    # HEALTH CHECK SCHEMAS
+    # ==========================================================================
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: string
+          format: date-time
+        environment:
+          type: string
+          enum: [development, production]
+        uptime:
+          type: integer
+          description: Segundos desde el inicio
+        database:
+          type: string
+          enum: [ok, error, checking...]
+        integrations:
+          type: object
+          properties:
+            supabase:
+              type: boolean
+            claude:
+              type: boolean
+            modo:
+              type: boolean
+            chatwoot:
+              type: boolean
+      required:
+        - status
+        - timestamp
+        - uptime
+        - database
+
+    ReadyResponse:
+      type: object
+      properties:
+        ready:
+          type: boolean
+          description: El sistema está listo para recibir pedidos
+        timestamp:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          description: Razón si no está ready (ej. 'Database not accessible')
+      required:
+        - ready
+        - timestamp
+
+    # ==========================================================================
+    # PEDIDO SCHEMAS
+    # ==========================================================================
+
+    Cliente:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Nombre del cliente
+        telefono:
+          type: string
+          minLength: 10
+          maxLength: 20
+          description: Teléfono único del cliente (UNIQUE en BD)
+        direccion:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Dirección de entrega (usada para calcular costo)
+      required:
+        - nombre
+        - telefono
+        - direccion
+
+    Item:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Nombre del producto (búsqueda fuzzy)
+        cantidad:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Cantidad de unidades
+      required:
+        - nombre
+        - cantidad
+
+    PedidoN8NRequest:
+      type: object
+      properties:
+        cliente:
+          $ref: '#/components/schemas/Cliente'
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Item'
+          description: Líneas del pedido
+        notas:
+          type: string
+          maxLength: 500
+          description: Notas adicionales del cliente
+        origen:
+          type: string
+          default: whatsapp
+          enum: [whatsapp, telegram, website, manual]
+          description: Origen de donde vino el pedido
+      required:
+        - cliente
+        - items
+
+    PedidoN8NResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        pedido:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: ID del pedido creado
+            cliente_id:
+              type: integer
+              description: ID del cliente
+            estado:
+              type: string
+              enum: [pendiente, preparando, listo, entregado, cancelado]
+            tipo_entrega:
+              type: string
+              enum: [delivery, retiro]
+            direccion_entrega:
+              type: string
+            total:
+              type: number
+              format: decimal
+              description: Total = subtotal + costo_envio
+            created_at:
+              type: string
+              format: date-time
+        detalle:
+          type: array
+          items:
+            type: object
+            properties:
+              producto:
+                type: string
+              cantidad:
+                type: integer
+              precio_unitario:
+                type: number
+                format: decimal
+              subtotal:
+                type: number
+                format: decimal
+        envio:
+          type: object
+          properties:
+            zona:
+              type: string
+              description: Zona de entrega encontrada
+            costo:
+              type: number
+              format: decimal
+              description: Costo de envío según zona
+
+    # ==========================================================================
+    # ERROR SCHEMAS
+    # ==========================================================================
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Tipo de error (VALIDATION_ERROR, NOT_FOUND, etc)
+        message:
+          type: string
+          description: Descripción del error
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+          description: Detalles adicionales (solo en development)
+        stack:
+          type: string
+          description: Stack trace (solo en development)
+      required:
+        - error
+        - message
+
+    # ==========================================================================
+    # AUTENTICACIÓN (FUTURO)
+    # ==========================================================================
+
+    AuthToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+          format: jwt
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Segundos hasta expiración
+
+  # ==========================================================================
+  # SECURITY SCHEMES
+  # ==========================================================================
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API Key para autenticación de webhooks (futuro)
+
+# =============================================================================
+# CORS Y CONFIGURACIÓN
+# =============================================================================
+
+x-cors:
+  origin:
+    - 'http://localhost:3000'
+    - 'http://localhost:3001'
+    - 'https://sist-pizza.local'
+  credentials: true
+  methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - PATCH
+  allowedHeaders:
+    - Content-Type
+    - Authorization
+
+x-rate-limit:
+  requests: 100
+  period: 1m
+  description: 100 requests por minuto (a implementar)
+
+x-security:
+  corsPolicy: restrictive
+  helmet: enabled
+  piiredaction: enabled
+  dataEncryption: tls1.3

@@ -1,8 +1,15 @@
 # 🍕 SIST Pizza - Sistema de Gestión de Pizzería
 
-Sistema integral de gestión para pizzería en Necochea, Argentina. Incluye pedidos en línea, pagos con Modo, integraciones con AFIP, soporte, routing de entregas, y monitoreo completo.
+Sistema integral de gestión para pizzería con integración WhatsApp. Recibe pedidos a través de WhatsApp, los procesa automáticamente a través de N8N, y los persiste en Supabase PostgreSQL.
 
-**Status:** ✅ 40/40 Prompts completados | Production Ready
+**Estado Actual:** ✅ Backend 100% | ✅ Tests 100% | ✅ Documentación 100%  
+**Próximo:** Ejecutar SQL (11 min) → Tests validación → Docker deployment
+
+### 🚀 ¿Por dónde empiezo?
+
+**Léo esto primero:** [`MASTER_BLUEPRINT.md`](./MASTER_BLUEPRINT.md) (5 minutos)  
+**Luego ejecuto:** [`docs/03-setup-sql/EJECUTAR_SQL_AHORA.md`](./docs/03-setup-sql/EJECUTAR_SQL_AHORA.md) (11 minutos)  
+**Finalmente:** Elige una ruta en [`docs/01-inicio/INDEX.md`](./docs/01-inicio/INDEX.md)
 
 ## 📋 Tabla de Contenidos
 

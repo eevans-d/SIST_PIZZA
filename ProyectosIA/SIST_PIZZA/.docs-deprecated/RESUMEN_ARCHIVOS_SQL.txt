@@ -1,0 +1,146 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║         ✅ ARCHIVOS SQL LISTOS PARA COPIAR-PEGAR EN SUPABASE                ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📁 ARCHIVOS CREADOS EN TU PROYECTO:
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  GUIA_COMPLETA_SQL.txt  ⭐ EMPIEZA POR AQUÍ
+    └─ Instrucciones paso-a-paso completas
+    └─ Solución de problemas
+    └─ Qué esperar después
+    └─ Tiempo estimado: 11 minutos
+    
+2️⃣  PASO_2_SCHEMA_SQL.txt  🔧 EJECUTAR PRIMERO
+    └─ 231 líneas de SQL
+    └─ Crea 6 tablas + índices + triggers
+    └─ Tiempo en Supabase: 5 minutos
+    └─ Resultado: ✅ "Success. No rows returned"
+    
+3️⃣  PASO_3_SEED_DATA_SQL.txt  📊 EJECUTAR SEGUNDO
+    └─ 165 líneas de SQL
+    └─ Inserta 25+ registros de prueba
+    └─ 5 clientes + 18 menú items + 3 pedidos
+    └─ Tiempo en Supabase: 3 minutos
+    └─ Resultado: ✅ "Success. No rows returned"
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 INSTRUCCIONES RÁPIDAS:
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Lee la guía completa
+   📖 cat GUIA_COMPLETA_SQL.txt
+
+PASO 2: Abre Supabase SQL Editor
+   🔗 https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg/sql/new
+
+PASO 3: Copia el SCHEMA
+   📄 cat PASO_2_SCHEMA_SQL.txt (copia el SQL, no las instrucciones)
+
+PASO 4: Pega en Supabase y ejecuta
+   • Click "New query"
+   • Pega el SQL
+   • Click "Run"
+   • Verifica: "Success"
+
+PASO 5: Copia el SEED DATA
+   📄 cat PASO_3_SEED_DATA_SQL.txt (copia el SQL, no las instrucciones)
+
+PASO 6: Pega en Supabase y ejecuta
+   • Click "New query"
+   • Pega el SQL
+   • Click "Run"
+   • Verifica: "Success"
+
+PASO 7: Verifica en Supabase Table Editor
+   📊 https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg/editor
+   ✓ Deberías ver 6 tablas
+   ✓ Deberías ver clientes, menu_items, pedidos, etc.
+
+PASO 8: Health check del backend
+   💻 curl http://localhost:4000/api/health | jq .
+   ✓ Deberías ver: "database": "ok"
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 CONTENIDO DE CADA ARCHIVO:
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO_2_SCHEMA_SQL.txt CONTIENE:
+   ✓ CREATE TABLE clientes
+   ✓ CREATE TABLE menu_items
+   ✓ CREATE TABLE pedidos
+   ✓ CREATE TABLE comandas (detalles de pedidos)
+   ✓ CREATE TABLE pagos
+   ✓ Índices (para búsquedas rápidas)
+   ✓ Row Level Security (RLS) policies
+   ✓ Triggers (actualizar timestamps, calcular subtotales)
+   ✓ 1 Vista para reportes
+
+PASO_3_SEED_DATA_SQL.txt CONTIENE:
+   ✓ 5 clientes de prueba (Carlos, María, Juan, Ana, Pedro)
+   ✓ 7 pizzas (Muzzarella, Napolitana, Calabresa, etc.)
+   ✓ 5 empanadas (Carne, Jamón y Queso, Pollo, Verdura, Roquefort)
+   ✓ 6 bebidas (Coca-Cola, Sprite, Fanta, Agua, Cerveza)
+   ✓ 2 postres (Flan, Helado)
+   ✓ 3 extras (Muzzarella, Jamón, Aceitunas)
+   ✓ 3 pedidos de ejemplo (entregado, confirmado, pendiente)
+   ✓ Detalles de cada pedido (comandas)
+   ✓ Pagos asociados
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️  IMPORTANTE:
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ ORDEN: PRIMERO SCHEMA, LUEGO SEED DATA (NO AL REVÉS)
+
+❌ NO copies las líneas que dicen:
+   • "📋 INSTRUCCIONES:"
+   • "✅ DESPUÉS DE..."
+   • "🚨 SOLUCIÓN DE PROBLEMAS"
+   
+✅ SÍ copia SOLO las líneas que comienzan con:
+   • "--" (comentarios SQL)
+   • "CREATE" (comandos SQL)
+   • "INSERT" (datos)
+   • "DO $$" (bloques PL/pgSQL)
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 PRÓXIMOS PASOS DESPUÉS DE TODO:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Backend conectado a Supabase ✓
+2. 6 tablas creadas ✓
+3. 25+ registros de prueba ✓
+4. Health check: "database": "ok" ✓
+
+LUEGO:
+
+5. Testear webhook N8N (crear pedido)
+6. Testear E2E (WhatsApp → Backend → Supabase)
+7. Docker Canales (opcional)
+8. Implementar Quick Wins (4 horas)
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 NECESITAS AYUDA:
+═══════════════════════════════════════════════════════════════════════════════
+
+Si algo falla:
+1. Lee GUIA_COMPLETA_SQL.txt (sección "🚨 SOLUCIÓN DE PROBLEMAS")
+2. Verifica que ejecutaste PRIMERO SCHEMA, LUEGO SEED
+3. Verifica que no hay errores en Supabase (mira el mensaje exacto)
+4. Avísame el error exacto y te ayudo
+
+═══════════════════════════════════════════════════════════════════════════════
+
+¡LISTO PARA EJECUTAR! 🚀
+
+📁 Directorio: /home/eevan/ProyectosIA/SIST_PIZZA/
+
+Archivos:
+  • GUIA_COMPLETA_SQL.txt
+  • PASO_2_SCHEMA_SQL.txt
+  • PASO_3_SEED_DATA_SQL.txt
+
+═══════════════════════════════════════════════════════════════════════════════

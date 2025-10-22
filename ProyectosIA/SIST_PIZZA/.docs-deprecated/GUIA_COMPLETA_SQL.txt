@@ -1,0 +1,197 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║            🎯 SIST_PIZZA - GUÍA FINAL PARA EJECUTAR SQL EN SUPABASE          ║
+║                                                                              ║
+║                          LISTO PARA COPIAR-PEGAR                             ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 RESUMEN DE LO QUE NECESITAS HACER:
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Ve a Supabase SQL Editor
+   🔗 https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg/sql/new
+
+PASO 2: Ejecuta el SCHEMA (crea las tablas)
+   📄 Archivo: PASO_2_SCHEMA_SQL.txt (en este proyecto)
+   ⏱️  Tiempo: 5 minutos
+   
+PASO 3: Ejecuta el SEED DATA (inserta datos de prueba)
+   📄 Archivo: PASO_3_SEED_DATA_SQL.txt (en este proyecto)
+   ⏱️  Tiempo: 3 minutos
+
+PASO 4: Verifica en Supabase que todo está correcto
+   📊 Table Editor: https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg/editor
+   ✓ Deberías ver 6 tablas
+   ✓ Deberías ver 25+ registros
+
+PASO 5: Verifica que Backend se conecta
+   💻 Terminal: curl http://localhost:4000/api/health | jq .
+   ✓ Deberías ver: "database": "ok"
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 PASOS DETALLADOS (COPIA-PEGA):
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 2A: COPIAR SCHEMA SQL
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Abre el archivo: PASO_2_SCHEMA_SQL.txt                                  │
+│ 2. Copia TODO el contenido SQL (comienza en "-- ============..." )          │
+│ 3. No copies la parte de "INSTRUCCIONES" ni "✅ DESPUÉS DE..."             │
+│ 4. Solo copia el código SQL                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PASO 2B: PEGAR EN SUPABASE
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Ve a: https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg/sql │
+│ 2. Click en "New query"                                                    │
+│ 3. Pega el contenido SQL que copiaste                                      │
+│ 4. Click en "Run" (o presiona Ctrl+Enter)                                  │
+│ 5. Espera 10 segundos...                                                   │
+│ 6. Verifica que veas: ✅ "Success. No rows returned"                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PASO 3A: COPIAR SEED DATA SQL
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Abre el archivo: PASO_3_SEED_DATA_SQL.txt                               │
+│ 2. Copia TODO el contenido SQL (comienza en "-- ============..." )          │
+│ 3. No copies la parte de "INSTRUCCIONES" ni "✅ DESPUÉS DE..."             │
+│ 4. Solo copia el código SQL                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PASO 3B: PEGAR EN SUPABASE
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Ve a: https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg/sql │
+│ 2. Click en "New query" (NUEVAMENTE)                                       │
+│ 3. Pega el contenido SEED DATA que copiaste                                │
+│ 4. Click en "Run" (o presiona Ctrl+Enter)                                  │
+│ 5. Espera 10 segundos...                                                   │
+│ 6. Verifica que veas: ✅ "Success. No rows returned"                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PASO 4: VERIFICAR EN SUPABASE
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Ve a: https://supabase.com/dashboard/project/htvlwhisjpdagqkqnpxg     │
+│ 2. Menú izquierdo → 📊 "Table Editor"                                     │
+│ 3. Deberías ver 6 tablas:                                                  │
+│    ✓ clientes (5 registros)                                               │
+│    ✓ menu_items (18 productos)                                            │
+│    ✓ pedidos (3 pedidos ejemplo)                                          │
+│    ✓ comandas (detalles de pedidos)                                       │
+│    ✓ pagos (información de pagos)                                         │
+│    ✓ audit_logs (auditoría del sistema)                                   │
+│                                                                            │
+│ 4. Click en cada tabla para verificar datos                               │
+│ 5. Ejemplo: Click en "menu_items" → deberías ver 18 filas                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PASO 5: HEALTH CHECK DEL BACKEND
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Abre una terminal en tu máquina                                         │
+│ 2. Ejecuta:                                                                │
+│                                                                            │
+│    curl http://localhost:4000/api/health | jq .                           │
+│                                                                            │
+│ 3. Deberías ver (IMPORTANTE: "database": "ok"):                           │
+│                                                                            │
+│    {                                                                       │
+│      "status": "ok",                                                       │
+│      "database": "ok",    ← ¡ESTO DEBE SER "ok"!                         │
+│      "integrations": {                                                     │
+│        "supabase": true                                                    │
+│      }                                                                     │
+│    }                                                                       │
+│                                                                            │
+│ 4. Si ves "database": "ok" → ✅ ¡ÉXITO!                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+🚨 SOLUCIÓN DE PROBLEMAS:
+═══════════════════════════════════════════════════════════════════════════════
+
+PROBLEMA: "Error: relation does not exist"
+├─ CAUSA: No ejecutaste el SCHEMA SQL
+└─ SOLUCIÓN: Ejecuta primero PASO_2_SCHEMA_SQL.txt
+
+PROBLEMA: "Error: duplicate key value violates unique constraint"
+├─ CAUSA: Ya ejecutaste el SEED DATA
+└─ SOLUCIÓN: No es un error, solo significa que ya están los datos.
+           Puedes ignorarlo.
+
+PROBLEMA: Health check muestra "database": "error"
+├─ CAUSA: Backend no logra conectarse a Supabase
+└─ SOLUCIONES:
+   1. Verifica que .env tiene las credenciales correctas
+   2. Verifica que las 6 tablas existen en Supabase
+   3. Verifica que los datos fueron insertados (SEED DATA ejecutado)
+   4. Reinicia el backend: pkill -f "npm run dev" && npm run dev
+
+PROBLEMA: No veo datos en Table Editor
+├─ CAUSA: SEED DATA no se ejecutó correctamente
+└─ SOLUCIÓN: Ejecuta nuevamente PASO_3_SEED_DATA_SQL.txt
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 QUÉ ESPERAR DESPUÉS DE TODO:
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ SUPABASE Dashboard:
+   • 6 tablas creadas
+   • 25+ registros de prueba
+   • Sistema de pagos integrado
+   • Auditoría habilitada
+
+✅ BACKEND:
+   • http://localhost:4000 → Respondiendo
+   • Health check → database: "ok"
+   • Conectado a Supabase
+   • Listo para webhooks
+
+✅ SISTEMA E2E:
+   • Webhook N8N puede crear pedidos
+   • Los pedidos se guardan en Supabase
+   • Cliente puede consultar estado
+   • Full integration lista
+
+═══════════════════════════════════════════════════════════════════════════════
+⏰ TIEMPO TOTAL:
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 2 (Schema SQL):        5 minutos
+PASO 3 (Seed Data SQL):     3 minutos
+PASO 4 (Verificación):      2 minutos
+PASO 5 (Health Check):      1 minuto
+────────────────────────────────────
+TOTAL:                     11 minutos ⚡
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 ARCHIVOS QUE NECESITAS:
+═══════════════════════════════════════════════════════════════════════════════
+
+En tu proyecto /home/eevan/ProyectosIA/SIST_PIZZA/:
+
+1️⃣  PASO_2_SCHEMA_SQL.txt
+    → Contiene el SQL para crear las 6 tablas
+
+2️⃣  PASO_3_SEED_DATA_SQL.txt
+    → Contiene el SQL para insertar 25+ registros
+
+3️⃣  supabase/migrations/20250115000000_initial_schema.sql
+    → Archivo fuente del SCHEMA (referencia)
+
+4️⃣  supabase/migrations/20250115000001_seed_data.sql
+    → Archivo fuente del SEED DATA (referencia)
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 AHORA:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Abre PASO_2_SCHEMA_SQL.txt
+2. Copia el SQL
+3. Pégalo en Supabase SQL Editor
+4. Click "Run"
+5. Si ves "Success" → Continúa con PASO 3
+
+¡VAMOS! 🚀
+
+═══════════════════════════════════════════════════════════════════════════════
