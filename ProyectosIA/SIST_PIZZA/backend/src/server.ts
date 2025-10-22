@@ -130,9 +130,37 @@ export function createApp(): Express {
     res.status(statusCode).json(health);
   });
 
-  app.get('/health/ready', (req: Request, res: Response) => {
-    // TODO: Verificar conexión a Supabase, Claude API, etc.
-    res.json({ ready: true });
+  app.get('/health/ready', async (req: Request, res: Response) => {
+    try {
+      // Verificar que Supabase está disponible y conectado
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        config.supabase.url,
+        config.supabase.anonKey
+      );
+
+      // Simple read test
+      const { error } = await supabase
+        .from('menu_items')
+        .select('count')
+        .limit(1);
+
+      if (error) {
+        safeLogger.warn('Health check: Supabase not ready', { error: error.message });
+        return res.status(503).json({
+          ready: false,
+          reason: 'Database not accessible',
+        });
+      }
+
+      res.json({
+        ready: true,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      safeLogger.error('Health check error', { error });
+      res.status(503).json({ ready: false, error: 'Internal error' });
+    }
   });
 
   // ============================================================================
@@ -143,9 +171,13 @@ export function createApp(): Express {
   const webhookN8N = require('./workflows/webhookN8N').default;
   app.use(webhookN8N);
 
-  // TODO: Agregar más rutas
-  // app.post('/api/webhooks/chatwoot', ...);
-  // app.post('/api/webhooks/modo', ...);
+  // ============================================================================
+  // RUTAS FUTURAS A IMPLEMENTAR
+  // ============================================================================
+  // Próximas integraciones (ver Opción D - Arquitectura):
+  // - app.post('/api/webhooks/chatwoot', ...) - Integración con soporte
+  // - app.post('/api/webhooks/mercadopago', ...) - Pagos en línea
+  // - app.post('/api/webhooks/whatsapp/status', ...) - Estado de mensajes
 
   // ============================================================================
   // 404 HANDLER
@@ -218,22 +250,25 @@ export async function startServer(): Promise<void> {
     });
   });
 
-  // Graceful shutdown
+  // Graceful shutdown con timeout
   const shutdown = async (signal: string) => {
     safeLogger.info(`Received ${signal}, shutting down gracefully...`);
 
     server.close(async () => {
-      safeLogger.info('Server closed');
-
-      // TODO: Cerrar conexiones (Supabase, etc.)
-      // await supabaseClient?.close();
+      try {
+        safeLogger.info('Server closed successfully');
+        // Nota: Supabase client no necesita .close() (es HTTP-based)
+        // Las conexiones se cierran automáticamente
+      } catch (error) {
+        safeLogger.error('Error during graceful shutdown', { error });
+      }
 
       process.exit(0);
     });
 
-    // Force exit después de 10s
+    // Force exit después de 10s si no cierra
     setTimeout(() => {
-      safeLogger.error('Could not close connections in time, forcefully shutting down');
+      safeLogger.warn('Forcing shutdown after 10 seconds timeout');
       process.exit(1);
     }, 10000);
   };

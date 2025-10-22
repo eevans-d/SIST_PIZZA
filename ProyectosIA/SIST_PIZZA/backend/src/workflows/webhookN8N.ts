@@ -96,12 +96,34 @@ router.post('/api/webhooks/n8n/pedido', async (req: Request, res: Response) => {
       })
     );
 
-    // 5. Calcular total
+    // 5. Buscar zona de entrega y calcular costo
+    const { data: zonas } = await supabase
+      .from('zonas_entrega')
+      .select('id, nombre, costo_base, palabras_clave');
+
+    // Buscar zona coincidente por palabras clave
+    const direccion = data.cliente.direccion.toLowerCase();
+    const zona = (zonas as any)?.find((z: any) =>
+      z.palabras_clave
+        ?.toLowerCase()
+        .split(',')
+        .some((palabra: string) => direccion.includes(palabra.trim()))
+    ) || (zonas as any)?.[0]; // Fallback a primera zona si no hay coincidencia
+
+    const costoEnvio = zona?.costo_base || 500; // Default $500 si no hay zonas
+
+    // Log para debugging
+    safeLogger.info('Shipping cost calculated', {
+      direccion,
+      zona: zona?.nombre,
+      costo: costoEnvio,
+    });
+
+    // 6. Calcular total
     const subtotal = itemsConPrecios.reduce((sum, item) => sum + item.subtotal, 0);
-    const costoEnvio = 500; // TODO: calcular por zona usando tabla zonas_entrega
     const total = subtotal + costoEnvio;
 
-    // 6. Crear pedido
+    // 7. Crear pedido
     const { data: pedido, error: errorPedido } = await supabase
       .from('pedidos')
       .insert({
