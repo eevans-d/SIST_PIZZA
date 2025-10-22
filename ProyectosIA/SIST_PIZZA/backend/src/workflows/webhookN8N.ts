@@ -110,21 +110,23 @@ router.post('/api/webhooks/n8n/pedido', async (req: Request, res: Response) => {
         tipo_entrega: 'delivery',
         direccion_entrega: data.cliente.direccion,
         total,
-        metodo_pago: 'pendiente',
-        notas: data.notas,
+        notas_cliente: data.notas,
       })
       .select()
       .single();
 
     if (errorPedido) throw new Error(`Error creando pedido: ${errorPedido.message}`);
 
-    // 7. Crear detalles del pedido
+    // 7. Crear detalles del pedido (en tabla "comandas")
     const { error: errorDetalles } = await supabase
-      .from('detalle_pedidos')
+      .from('comandas')
       .insert(
         itemsConPrecios.map((item) => ({
           pedido_id: pedido.id,
-          ...item,
+          menu_item_id: item.menu_item_id,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
         }))
       );
 
