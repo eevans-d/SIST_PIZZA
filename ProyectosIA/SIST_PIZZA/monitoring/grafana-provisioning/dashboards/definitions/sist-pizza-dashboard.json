@@ -1,5 +1,10 @@
 {
   "dashboard": {
+    "id": null,
+    "uid": "sist-pizza-overview",
+    "version": 1,
+    "schemaVersion": 36,
+    "timezone": "browser",
     "title": "SIST_PIZZA - Overview",
     "panels": [
       {
