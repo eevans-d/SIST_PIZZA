@@ -46,31 +46,47 @@ export type Config = z.infer<typeof configSchema>;
 
 export function validateConfig(env: any): Config {
   try {
+    const isTestEnv = env.NODE_ENV === 'test' || !!env.VITEST;
+
+    const fallbackSupabase = isTestEnv
+      ? {
+          url: env.SUPABASE_URL || 'http://localhost:54321',
+          anonKey: env.SUPABASE_ANON_KEY || 'test_anon_key_12345678901234567890',
+          serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY || 'test_service_role_key_12345678901234567890',
+        }
+      : {
+          url: env.SUPABASE_URL,
+          anonKey: env.SUPABASE_ANON_KEY,
+          serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+        };
+
     return configSchema.parse({
-      supabase: {
-        url: env.SUPABASE_URL,
-        anonKey: env.SUPABASE_ANON_KEY,
-        serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
-      },
+      supabase: fallbackSupabase,
       server: {
         nodeEnv: env.NODE_ENV,
         port: env.PORT,
         host: env.HOST,
         allowedOrigins: env.ALLOWED_ORIGINS?.split(','),
       },
-      claude: env.ANTHROPIC_API_KEY ? {
-        apiKey: env.ANTHROPIC_API_KEY,
-        model: env.CLAUDE_MODEL,
-        maxTokensPerSession: env.MAX_TOKENS_PER_SESSION,
-      } : undefined,
-      modo: env.MODO_API_KEY ? {
-        apiKey: env.MODO_API_KEY,
-        webhookSecret: env.MODO_WEBHOOK_SECRET,
-      } : undefined,
-      chatwoot: env.CHATWOOT_API_KEY ? {
-        apiKey: env.CHATWOOT_API_KEY,
-        baseUrl: env.CHATWOOT_BASE_URL,
-      } : undefined,
+      claude: env.ANTHROPIC_API_KEY
+        ? {
+            apiKey: env.ANTHROPIC_API_KEY,
+            model: env.CLAUDE_MODEL,
+            maxTokensPerSession: env.MAX_TOKENS_PER_SESSION,
+          }
+        : undefined,
+      modo: env.MODO_API_KEY
+        ? {
+            apiKey: env.MODO_API_KEY,
+            webhookSecret: env.MODO_WEBHOOK_SECRET,
+          }
+        : undefined,
+      chatwoot: env.CHATWOOT_API_KEY
+        ? {
+            apiKey: env.CHATWOOT_API_KEY,
+            baseUrl: env.CHATWOOT_BASE_URL,
+          }
+        : undefined,
       database: {
         encryptionKey: env.DB_ENCRYPTION_KEY,
       },
