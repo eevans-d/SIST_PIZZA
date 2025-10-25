@@ -400,7 +400,8 @@ SUPABASE_SERVICE_ROLE_KEY=<produccion>
 - `PATCH /api/pedidos/:id` - Actualizar estado (IMPLEMENTADO)
 - `GET /api/menu` - Listar items del menú disponibles (IMPLEMENTADO)
 - `GET /api/menu/:id` - Detalle de item del menú (IMPLEMENTADO)
-- `POST /api/menu` - Crear/actualizar item del menú (admin)
+- `POST /api/menu` - Crear item del menú (admin, service role) (IMPLEMENTADO)
+- `PATCH /api/menu/:id` - Actualizar item del menú (admin, service role) (IMPLEMENTADO)
 
 ---
 

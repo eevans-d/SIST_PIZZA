@@ -190,6 +190,10 @@ export function createApp(): Express {
   const pedidosRouter = require('./workflows/pedidos').default;
   app.use(pedidosRouter);
 
+  // Menú (admin)
+  const menuRouter = require('./workflows/menu').default;
+  app.use(menuRouter);
+
   // Endpoints REST mínimos
   const apiRoutes = require('./routes').default;
   app.use(apiRoutes);
