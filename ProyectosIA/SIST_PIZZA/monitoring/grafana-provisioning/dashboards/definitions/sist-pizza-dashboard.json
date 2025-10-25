@@ -1,0 +1,28 @@
+{
+  "dashboard": {
+    "title": "SIST_PIZZA - Overview",
+    "panels": [
+      {
+        "title": "HTTP Requests Total",
+        "type": "graph",
+        "targets": [
+          { "expr": "rate(http_requests_total[5m])" }
+        ]
+      },
+      {
+        "title": "Request Duration (p95)",
+        "type": "graph",
+        "targets": [
+          { "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))" }
+        ]
+      },
+      {
+        "title": "Comandas Creadas (últimas 24h)",
+        "type": "stat",
+        "targets": [
+          { "expr": "increase(comandas_created_total[24h])" }
+        ]
+      }
+    ]
+  }
+}

@@ -17,6 +17,8 @@ import express, {
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import metricsRouter, { metricsMiddleware } from './services/metrics';
+import { apiLimiter } from './middleware/rateLimiter';
 import { safeLogger } from './lib/logger';
 import { config } from './config';
 
@@ -70,6 +72,15 @@ export function createApp(): Express {
   );
 
   // ============================================================================
+  // MÉTRICAS (PROMETHEUS)
+  // Middleware para tracking automático de requests
+  app.use(metricsMiddleware);
+  // Endpoint de métricas para Prometheus
+  app.use(metricsRouter);
+
+  // Rate limiting general para API
+  app.use('/api/', apiLimiter);
+
   // HEALTHCHECK
   // ============================================================================
 

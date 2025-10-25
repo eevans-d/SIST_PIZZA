@@ -4,6 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { webhookLimiter } from '../middleware/rateLimiter';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config';
@@ -32,7 +33,7 @@ const pedidoN8NSchema = z.object({
  * POST /api/webhooks/n8n/pedido
  * Crear pedido desde N8N (procesado por Claude)
  */
-router.post('/api/webhooks/n8n/pedido', async (req: Request, res: Response) => {
+router.post('/api/webhooks/n8n/pedido', webhookLimiter, async (req: Request, res: Response) => {
   try {
     // 1. Validar datos
     const data = pedidoN8NSchema.parse(req.body);
