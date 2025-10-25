@@ -240,19 +240,23 @@ curl -X POST http://localhost:4000/api/webhooks/n8n/pedido \
 
 ### Rate Limiting
 
-⚠️ **TODO:** Implementar rate limiting con `express-rate-limit`
+Implementado con `express-rate-limit`.
 
-```typescript
-// Ejemplo futuro:
-import rateLimit from 'express-rate-limit';
+- General API (`/api/*`): 100 requests por 15 min por IP
+- Webhook N8N (`/api/webhooks/*`): 30 requests por minuto por IP
+- Endpoints sensibles (ej. login/registro/pagos): strict (5 intentos/15 min, solo cuenta fallidos)
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por IP
-});
-
-app.use('/api/', limiter);
+Respuestas de ejemplo:
+- 429 Too Many Requests
+```json
+{
+  "error": "Too Many Requests",
+  "message": "Has excedido el límite de solicitudes. Intenta de nuevo más tarde."
+}
 ```
+
+Headers estándar:
+- `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`
 
 ### PII Redaction
 

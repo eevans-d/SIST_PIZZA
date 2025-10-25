@@ -182,6 +182,10 @@ export function createApp(): Express {
   const webhookN8N = require('./workflows/webhookN8N').default;
   app.use(webhookN8N);
 
+  // Endpoints REST mínimos
+  const apiRoutes = require('./routes').default;
+  app.use(apiRoutes);
+
   // ============================================================================
   // RUTAS FUTURAS A IMPLEMENTAR
   // ============================================================================
