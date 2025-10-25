@@ -34,6 +34,8 @@ export function createApp(): Express {
 
   // Headers de seguridad HTTP
   app.use(helmet());
+  // Si se despliega detrás de proxy (Nginx/Ingress), confiar en cabeceras X-Forwarded-For para IP real
+  app.set('trust proxy', 1);
 
   // CORS restrictivo: solo dominio principal
   const allowedOrigins = config.server.allowedOrigins.filter(Boolean);
@@ -51,8 +53,9 @@ export function createApp(): Express {
   // PARSING
   // ============================================================================
 
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+  // Limitar body por defecto a 1mb y ampliar por ruta si es necesario
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
   // ============================================================================
   // LOGGING

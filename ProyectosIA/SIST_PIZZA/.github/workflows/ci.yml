@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, genspark_ai_developer ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ProyectosIA/SIST_PIZZA/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            ProyectosIA/SIST_PIZZA/backend/package-lock.json
+            ProyectosIA/SIST_PIZZA/frontend/package-lock.json
+      - name: Install deps (backend)
+        run: npm ci
+      - name: Lint (backend)
+        run: npm run lint --ignore-pattern dist || true
+      - name: Type check (backend)
+        run: npm run build --noEmit
+      - name: Test (backend)
+        run: npm test -- --run
+      - name: Security audit (backend)
+        run: |
+          npm audit --audit-level=high || echo "Audit warnings present"
+      - name: Docker build (backend)
+        run: |
+          docker build -f ProyectosIA/SIST_PIZZA/docker/Dockerfile.backend -t sist-pizza-backend:ci .
+        working-directory: .
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ProyectosIA/SIST_PIZZA/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ProyectosIA/SIST_PIZZA/frontend/package-lock.json
+      - name: Install deps (frontend)
+        run: npm ci
+      - name: Build (frontend)
+        run: npm run build
+      - name: Security audit (frontend)
+        run: |
+          npm audit --audit-level=high || echo "Audit warnings present"

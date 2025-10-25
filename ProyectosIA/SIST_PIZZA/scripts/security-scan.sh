@@ -68,7 +68,7 @@ if grep -r "PRIVATE_KEY" backend/src --include="*.ts" 2>/dev/null; then
     SECRETS_FOUND=$((SECRETS_FOUND + 1))
 fi
 
-if grep -r "SECRET" backend/src --include="*.ts" 2>/dev/null | grep -v "SUPABASE_SERVICE_KEY\|DB_PASSWORD" | grep -E "=\s*['\"]"; then
+if grep -r "SECRET" backend/src --include="*.ts" 2>/dev/null | grep -v "SUPABASE_SERVICE_ROLE_KEY\|DB_PASSWORD" | grep -E "=\s*['\"]"; then
     SECRETS_FOUND=$((SECRETS_FOUND + 1))
 fi
 

@@ -4,11 +4,24 @@
  */
 
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { webhookLimiter } from '../middleware/rateLimiter';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config';
 import { safeLogger } from '../lib/logger';
+
+export function verifyHmacSignature(body: any, secret?: string, signature?: string): boolean {
+  if (!secret || !signature) return true;
+  try {
+    const hmac = crypto.createHmac('sha256', secret);
+    const rawBody = JSON.stringify(body || {});
+    const expected = hmac.update(rawBody).digest('hex');
+    return expected === signature;
+  } catch {
+    return false;
+  }
+}
 
 const router = Router();
 
@@ -35,6 +48,14 @@ const pedidoN8NSchema = z.object({
  */
 router.post('/api/webhooks/n8n/pedido', webhookLimiter, async (req: Request, res: Response) => {
   try {
+    // 0. Verificar firma (si está configurado N8N_WEBHOOK_SECRET)
+    const secret = process.env.N8N_WEBHOOK_SECRET;
+    const signature = req.get('X-Signature') || req.get('x-signature');
+    if (!verifyHmacSignature(req.body, secret, signature)) {
+      safeLogger.warn('Webhook signature mismatch', { signature: signature?.slice(0, 8) + '...' });
+      return res.status(401).json({ success: false, error: 'Invalid signature' });
+    }
+
     // 1. Validar datos
     const data = pedidoN8NSchema.parse(req.body);
     

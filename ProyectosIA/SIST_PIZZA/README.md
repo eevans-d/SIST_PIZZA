@@ -65,7 +65,7 @@ DB_PASSWORD=your_password
 # Supabase/API Keys
 SUPABASE_URL=https://your-supabase.supabase.co
 SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_KEY=your_service_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # External APIs
 CLAUDE_API_KEY=sk-ant-xxxxxxxxxxxx

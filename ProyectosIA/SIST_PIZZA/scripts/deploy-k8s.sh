@@ -41,7 +41,7 @@ echo -e "${YELLOW}Creating secrets...${NC}"
 kubectl create secret generic sist-pizza-secrets \
   --from-literal=DB_PASSWORD="${DB_PASSWORD:-postgres}" \
   --from-literal=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-  --from-literal=SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY}" \
+  --from-literal=SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY}" \
   --from-literal=CLAUDE_API_KEY="${CLAUDE_API_KEY}" \
   --from-literal=MODO_API_KEY="${MODO_API_KEY}" \
   --from-literal=CHATWOOT_API_KEY="${CHATWOOT_API_KEY}" \
