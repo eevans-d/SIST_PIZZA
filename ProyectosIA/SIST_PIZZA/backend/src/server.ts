@@ -54,8 +54,20 @@ export function createApp(): Express {
   // ============================================================================
 
   // Limitar body por defecto a 1mb y ampliar por ruta si es necesario
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ limit: '1mb', extended: true }));
+  // Capturamos rawBody para verificación HMAC en webhooks
+  app.use(express.json({
+    limit: '1mb',
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf?.toString('utf8');
+    }
+  }));
+  app.use(express.urlencoded({
+    limit: '1mb',
+    extended: true,
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf?.toString('utf8');
+    }
+  }));
 
   // ============================================================================
   // LOGGING

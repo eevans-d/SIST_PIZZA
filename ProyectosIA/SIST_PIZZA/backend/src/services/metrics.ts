@@ -12,7 +12,7 @@ export const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duración de requests HTTP en segundos',
   labelNames: ['method', 'route', 'status'],
-  buckets: [0.1, 0.5, 1, 2, 5],
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5],
 });
 
 // Business Metrics
