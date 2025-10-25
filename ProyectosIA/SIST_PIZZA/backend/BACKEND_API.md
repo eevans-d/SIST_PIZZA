@@ -400,6 +400,7 @@ SUPABASE_SERVICE_ROLE_KEY=<produccion>
 
 - `POST /api/webhooks/chatwoot` - Recibir mensajes de Chatwoot
 - `POST /api/webhooks/modo` - Callback de pagos de MODO
+- `GET /api/pedidos` - Listar pedidos con filtros y paginación (IMPLEMENTADO)
 - `GET /api/pedidos/:id` - Consultar estado de pedido (IMPLEMENTADO)
 - `PATCH /api/pedidos/:id` - Actualizar estado (IMPLEMENTADO)
 - `GET /api/menu` - Listar items del menú disponibles (IMPLEMENTADO)
