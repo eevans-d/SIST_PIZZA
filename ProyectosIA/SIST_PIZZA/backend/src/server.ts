@@ -186,6 +186,10 @@ export function createApp(): Express {
   const ticketsRouter = require('./workflows/tickets').default;
   app.use(ticketsRouter);
 
+  // Pedidos (estado)
+  const pedidosRouter = require('./workflows/pedidos').default;
+  app.use(pedidosRouter);
+
   // Endpoints REST mínimos
   const apiRoutes = require('./routes').default;
   app.use(apiRoutes);

@@ -21,6 +21,24 @@ router.get('/api/menu', async (_req, res) => {
   }
 });
 
+// GET /api/menu/:id - detalle de item
+router.get('/api/menu/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const supabase = createClient(config.supabase.url, config.supabase.anonKey);
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('id,nombre,descripcion,precio,disponible,categoria,ingredientes,tiempo_preparacion_min')
+      .eq('id', id)
+      .single();
+
+    if (error) return res.status(404).json({ error: 'Not Found', message: 'Item no encontrado' });
+    res.json({ item: data });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Internal error', message: err.message });
+  }
+});
+
 // GET /api/pedidos/:id - detalle de pedido
 router.get('/api/pedidos/:id', async (req, res) => {
   try {
