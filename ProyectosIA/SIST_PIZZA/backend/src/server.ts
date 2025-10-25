@@ -182,6 +182,10 @@ export function createApp(): Express {
   const webhookN8N = require('./workflows/webhookN8N').default;
   app.use(webhookN8N);
 
+  // Tickets de soporte (strict rate limit)
+  const ticketsRouter = require('./workflows/tickets').default;
+  app.use(ticketsRouter);
+
   // Endpoints REST mínimos
   const apiRoutes = require('./routes').default;
   app.use(apiRoutes);
