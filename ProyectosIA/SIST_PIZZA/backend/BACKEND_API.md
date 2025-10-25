@@ -238,6 +238,10 @@ curl -X POST http://localhost:4000/api/webhooks/n8n/pedido \
 - **Credentials:** `true`
 - **Headers:** `Content-Type, Authorization`
 
+### Helmet (Seguridad HTTP)
+- Configurado con valores por defecto seguros en desarrollo
+- Recomendado en producción: agregar Content Security Policy (CSP) restrictiva
+
 ### Rate Limiting
 
 Implementado con `express-rate-limit`.
