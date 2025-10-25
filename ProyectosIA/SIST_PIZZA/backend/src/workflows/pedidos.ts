@@ -6,7 +6,7 @@ import { safeLogger } from '../lib/logger';
 
 const router = Router();
 
-const updatePedidoSchema = z.object({
+export const updatePedidoSchema = z.object({
   estado: z.enum(['pendiente', 'confirmado', 'en_preparacion', 'listo', 'entregado', 'cancelado']),
 });
 
