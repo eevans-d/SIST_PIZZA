@@ -54,12 +54,26 @@ const pedidoN8NSchema = z.object({
  */
 router.post('/api/webhooks/n8n/pedido', webhookLimiter, async (req: Request, res: Response) => {
   try {
-    // 0. Verificar firma (si está configurado N8N_WEBHOOK_SECRET)
-    const secret = process.env.N8N_WEBHOOK_SECRET;
+    // 0. Verificar firma HMAC (si está configurado N8N_WEBHOOK_SECRET)
+    const secret = config.n8n?.webhookSecret;
     const signature = req.get('X-Signature') || req.get('x-signature');
-    if (!verifyHmacSignatureFromRaw((req as any).rawBody, secret, signature)) {
-      safeLogger.warn('Webhook signature mismatch', { signature: signature?.slice(0, 8) + '...' });
-      return res.status(401).json({ success: false, error: 'Invalid signature' });
+    
+    if (secret) {
+      if (!signature) {
+        safeLogger.warn('N8N webhook rejected - missing signature');
+        return res.status(401).json({ success: false, error: 'Missing signature' });
+      }
+      
+      if (!verifyHmacSignatureFromRaw((req as any).rawBody, secret, signature)) {
+        safeLogger.warn('N8N webhook rejected - invalid signature', { 
+          signaturePrefix: signature?.slice(0, 8) + '...' 
+        });
+        return res.status(401).json({ success: false, error: 'Invalid signature' });
+      }
+      
+      safeLogger.info('N8N webhook signature validated successfully');
+    } else {
+      safeLogger.warn('N8N_WEBHOOK_SECRET not configured - skipping HMAC validation');
     }
 
     // 1. Validar datos

@@ -31,6 +31,11 @@ const configSchema = z.object({
   chatwoot: z.object({
     apiKey: z.string().optional(),
     baseUrl: z.string().url().optional(),
+    webhookSecret: z.string().optional(),
+  }).optional(),
+  
+  n8n: z.object({
+    webhookSecret: z.string().optional(),
   }).optional(),
   
   database: z.object({
@@ -85,6 +90,12 @@ export function validateConfig(env: any): Config {
         ? {
             apiKey: env.CHATWOOT_API_KEY,
             baseUrl: env.CHATWOOT_BASE_URL,
+            webhookSecret: env.CHATWOOT_WEBHOOK_SECRET,
+          }
+        : undefined,
+      n8n: env.N8N_WEBHOOK_SECRET
+        ? {
+            webhookSecret: env.N8N_WEBHOOK_SECRET,
           }
         : undefined,
       database: {
