@@ -32,20 +32,66 @@ export function createApp(): Express {
   // SEGURIDAD
   // ============================================================================
 
-  // Headers de seguridad HTTP
-  app.use(helmet());
+  // Headers de seguridad HTTP con CSP
+  const isProduction = config.server.nodeEnv === 'production';
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:', 'https:'],
+              connectSrc: [
+                "'self'",
+                config.supabase.url,
+                'https://api.anthropic.com',
+                ...(config.chatwoot?.baseUrl ? [config.chatwoot.baseUrl] : []),
+              ].filter(Boolean),
+              fontSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'"],
+              frameSrc: ["'none'"],
+              upgradeInsecureRequests: [],
+            },
+          }
+        : false, // Desactivar CSP en desarrollo para facilitar debugging
+    })
+  );
   // Si se despliega detrás de proxy (Nginx/Ingress), confiar en cabeceras X-Forwarded-For para IP real
   app.set('trust proxy', 1);
 
-  // CORS restrictivo: solo dominio principal
+  // CORS restrictivo: solo dominios permitidos exactos
   const allowedOrigins = config.server.allowedOrigins.filter(Boolean);
 
   app.use(
     cors({
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        // Permitir requests sin origin (Postman, curl, mobile apps)
+        if (!origin) {
+          return callback(null, true);
+        }
+        
+        // En producción, validar origin exacto
+        if (isProduction && !allowedOrigins.includes(origin)) {
+          safeLogger.warn('CORS blocked unauthorized origin', { origin });
+          return callback(new Error('Not allowed by CORS'));
+        }
+        
+        // En desarrollo, permitir todos los allowedOrigins
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Rechazar cualquier otro origin
+        return callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+      maxAge: 86400, // 24 horas de cache de preflight
     })
   );
 

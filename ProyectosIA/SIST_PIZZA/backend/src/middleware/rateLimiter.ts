@@ -73,6 +73,7 @@ export const strictLimiter = rateLimit({
 });
 
 // Rate limiter específico para webhook N8N
+// SLO: 30 requests/minuto = suficiente para tráfico normal pero previene DoS
 export const webhookLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
   max: 30, // Máximo 30 requests por minuto
@@ -84,9 +85,23 @@ export const webhookLimiter = rateLimit({
     error: 'Webhook Rate Limit',
     message: 'El webhook ha excedido el límite de llamadas por minuto.',
   },
+  handler: (req, res) => {
+    safeLogger.warn('Webhook rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      method: req.method,
+    });
+    
+    res.status(429).json({
+      error: 'Webhook Rate Limit',
+      message: 'El webhook ha excedido el límite de llamadas por minuto.',
+      retryAfter: 60,
+    });
+  },
 });
 
 // Rate limiter específico para exportaciones (CSV)
+// SLO: 5 exports/minuto para prevenir abuso de recursos
 export const exportLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
   max: 5, // más estricto
@@ -96,5 +111,63 @@ export const exportLimiter = rateLimit({
   message: {
     error: 'Export Rate Limit',
     message: 'Demasiadas exportaciones en poco tiempo. Intenta nuevamente más tarde.'
-  }
+  },
+  handler: (req, res) => {
+    safeLogger.warn('Export rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      method: req.method,
+    });
+    
+    res.status(429).json({
+      error: 'Export Rate Limit',
+      message: 'Demasiadas exportaciones en poco tiempo. Intenta nuevamente más tarde.',
+      retryAfter: 60,
+    });
+  },
+});
+
+// Rate limiter para login/auth endpoints
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Máximo 5 intentos
+  skipSuccessfulRequests: true, // No contar requests exitosos
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore,
+  handler: (req, res) => {
+    safeLogger.error('Auth rate limit exceeded - Possible brute force', {
+      ip: req.ip,
+      path: req.path,
+      userAgent: req.get('user-agent'),
+    });
+    
+    res.status(429).json({
+      error: 'Too Many Login Attempts',
+      message: 'Demasiados intentos de inicio de sesión. Tu cuenta ha sido bloqueada temporalmente.',
+      blockedUntil: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    });
+  },
+});
+
+// Rate limiter para operaciones de administración
+export const adminLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 20, // Más permisivo para admins pero con control
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore,
+  handler: (req, res) => {
+    safeLogger.warn('Admin rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      method: req.method,
+    });
+    
+    res.status(429).json({
+      error: 'Admin Rate Limit',
+      message: 'Has excedido el límite de operaciones administrativas.',
+      retryAfter: 60,
+    });
+  },
 });

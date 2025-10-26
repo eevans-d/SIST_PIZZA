@@ -1,154 +1,238 @@
 groups:
-  - name: sist_pizza_alerts
+  - name: sist_pizza_backend
     interval: 30s
     rules:
-      # API Error Rate
-      - alert: HighErrorRate
-        expr: |
-          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)) /
-          (sum(rate(http_requests_total[5m])) by (job)) > 0.05
-        for: 5m
-        labels:
-          severity: critical
-          component: backend
-        annotations:
-          summary: "Alta tasa de errores en {{ $labels.job }}"
-          description: "{{ $value | humanizePercentage }} de errores 5xx en los últimos 5 minutos"
-
-      # API Latency
-      - alert: HighLatency
-        expr: |
-          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 1
-        for: 3m
-        labels:
-          severity: warning
-          component: backend
-        annotations:
-          summary: "Latencia alta en {{ $labels.job }}"
-          description: "P95 latencia: {{ $value | humanizeDuration }}"
-
-      # Database Connections
-      - alert: HighDatabaseConnections
-        expr: |
-          pg_stat_activity_count > 20
-        for: 2m
-        labels:
-          severity: warning
-          component: database
-        annotations:
-          summary: "Demasiadas conexiones activas a PostgreSQL"
-          description: "Conexiones actuales: {{ $value }}"
-
-      # Database Query Performance
-      - alert: SlowDatabaseQueries
-        expr: |
-          pg_slow_queries_total > 10
-        for: 5m
-        labels:
-          severity: warning
-          component: database
-        annotations:
-          summary: "Queries lentas detectadas en PostgreSQL"
-          description: "Total de queries lentas: {{ $value }}"
-
-      # Redis Memory Usage
-      - alert: HighRedisMemory
-        expr: |
-          redis_memory_used_bytes / redis_memory_max_bytes > 0.8
-        for: 5m
-        labels:
-          severity: warning
-          component: cache
-        annotations:
-          summary: "Uso de memoria alto en Redis"
-          description: "Uso actual: {{ $value | humanizePercentage }}"
-
-      # Service Down
-      - alert: ServiceDown
-        expr: |
-          up{job=~"backend|postgres|redis"} == 0
+      # Alertas de Disponibilidad
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
         for: 1m
         labels:
           severity: critical
-          component: infrastructure
+          component: backend
         annotations:
-          summary: "{{ $labels.job }} está caído"
-          description: "{{ $labels.instance }} no está respondiendo desde hace 1 minuto"
+          summary: "Backend is down"
+          description: "Backend service has been down for more than 1 minute"
 
-      # Pod/Container Restart
-      - alert: FrequentPodRestarts
+      - alert: HighErrorRate
         expr: |
-          increase(container_last_seen[15m]) > 3
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) * 100 > 1
         for: 5m
         labels:
           severity: warning
-          component: orchestration
+          component: backend
         annotations:
-          summary: "{{ $labels.pod_name }} reiniciándose frecuentemente"
-          description: "{{ $value }} reinicios en los últimos 15 minutos"
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
 
-      # Disk Usage
-      - alert: HighDiskUsage
+      - alert: CriticalErrorRate
         expr: |
-          (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.2
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Alertas de Latencia
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
         for: 5m
         labels:
           severity: warning
-          component: infrastructure
+          component: backend
         annotations:
-          summary: "Espacio en disco bajo en {{ $labels.device }}"
-          description: "Solo {{ $value | humanizePercentage }} disponible"
+          summary: "High API latency detected"
+          description: "P95 latency is {{ $value }}s (threshold: 1s)"
 
-  # Business metrics alerts
+      - alert: CriticalLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 3
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Critical API latency detected"
+          description: "P95 latency is {{ $value }}s (threshold: 3s)"
+
+      # Alertas de Recursos
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 400
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}MB (threshold: 400MB)"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[1m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+  - name: sist_pizza_database
+    interval: 30s
+    rules:
+      # Alertas de Base de Datos (Supabase/Postgres)
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_database_numbackends > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High database connections"
+          description: "Database has {{ $value }} active connections (threshold: 80)"
+
+      - alert: DatabaseSlowQueries
+        expr: pg_stat_statements_mean_time_seconds > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is {{ $value }}s"
+
+  - name: sist_pizza_redis
+    interval: 30s
+    rules:
+      # Alertas de Redis
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis service has been down for more than 1 minute"
+
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: RedisConnectionsHigh
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "High Redis connections"
+          description: "Redis has {{ $value }} connected clients"
+
   - name: sist_pizza_business
     interval: 1m
     rules:
-      # Low order rate
-      - alert: LowOrderRate
+      # Alertas de Negocio
+      - alert: NoOrdersProcessed
         expr: |
-          rate(comandas_created_total[5m]) < 0.1
-        for: 10m
+          increase(pedidos_created_total[15m]) == 0
+        for: 30m
         labels:
           severity: info
           component: business
         annotations:
-          summary: "Tasa de órdenes baja"
-          description: "{{ $value | humanize }}/min en últimos 5 minutos"
+          summary: "No orders processed recently"
+          description: "No orders have been processed in the last 30 minutes"
 
-      # Payment failures
-      - alert: HighPaymentFailureRate
+      - alert: HighOrderFailureRate
         expr: |
-          (sum(rate(payment_attempts_total{status="failed"}[5m])) by (payment_method)) /
-          (sum(rate(payment_attempts_total[5m])) by (payment_method)) > 0.1
+          (
+            sum(rate(pedidos_failed_total[10m]))
+            /
+            sum(rate(pedidos_created_total[10m]))
+          ) * 100 > 10
+        for: 10m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "High order failure rate"
+          description: "Order failure rate is {{ $value | humanizePercentage }}"
+
+  - name: sist_pizza_integrations
+    interval: 1m
+    rules:
+      # Alertas de Integraciones
+      - alert: ClaudeAPIDown
+        expr: claude_api_errors_total > 10
         for: 5m
         labels:
           severity: warning
-          component: payments
+          component: integrations
         annotations:
-          summary: "Tasa alta de pagos fallidos en {{ $labels.payment_method }}"
-          description: "{{ $value | humanizePercentage }} de intentos fallando"
+          summary: "Claude API experiencing errors"
+          description: "Claude API has {{ $value }} errors in the last 5 minutes"
 
-      # SLA Breaches
-      - alert: SLABreach
-        expr: |
-          (sum(comandas_sla_breach_total) by (zone)) /
-          (sum(comandas_completed_total) by (zone)) > 0.1
+      - alert: ClaudeCircuitBreakerOpen
+        expr: claude_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: integrations
+        annotations:
+          summary: "Claude API circuit breaker is open"
+          description: "Claude API circuit breaker has been triggered"
+
+      - alert: SupabaseAPIErrors
+        expr: rate(supabase_api_errors_total[5m]) > 1
         for: 5m
         labels:
           severity: warning
-          component: operations
+          component: integrations
         annotations:
-          summary: "Ruptura de SLA en zona {{ $labels.zone }}"
-          description: "{{ $value | humanizePercentage }} de comandas excediendo SLA"
+          summary: "Supabase API errors detected"
+          description: "Supabase API error rate is {{ $value }}/s"
 
-      # Support backlog
-      - alert: SupportBacklogHigh
-        expr: |
-          support_tickets_pending > 20
-        for: 30m
+  - name: sist_pizza_exporters
+    interval: 30s
+    rules:
+      # Alertas de Exporters
+      - alert: ExporterDown
+        expr: up == 0
+        for: 2m
         labels:
           severity: warning
-          component: support
+          component: monitoring
         annotations:
-          summary: "Acumulación en tickets de soporte"
-          description: "{{ $value }} tickets pendientes"
+          summary: "Exporter {{ $labels.job }} is down"
+          description: "Exporter {{ $labels.job }} has been down for 2 minutes"
+
+      - alert: ScrapeFailing
+        expr: up{job=~"backend|redis|postgres"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: monitoring
+        annotations:
+          summary: "Critical exporter {{ $labels.job }} is down"
+          description: "Cannot scrape metrics from {{ $labels.job }}"
