@@ -6,17 +6,10 @@ version: 1
 # Rutas de destino dentro del repo actual y sus fuentes relativas
 # Si no se especifica, se preserva la estructura original de la fuente
 mappings:
-  # Ejemplos de mapeo (activa los que necesites)
-  # - from: backend/
-  #   to: backend/
-  # - from: docs/
-  #   to: docs/
-  # - from: docker/
-  #   to: docker/
-  # - from: supabase/
-  #   to: supabase/
-  # - from: frontend/
-  #   to: frontend/
+  # Importación segura: trae TODO el contenido de la fuente a una carpeta aislada
+  # dentro del repositorio actual para revisión y posterior cherry-pick.
+  - from: .
+    to: integrations/genspark
 
 # Exclusiones comunes al importar (patrones rsync)
 exclude:
@@ -25,20 +18,48 @@ exclude:
   - dist/
   - build/
   - .vscode/
-  - .vscode-server/
-  - .idea/
-  - logs/
-  - *.log
-  - tmp/
-  - temp/
-  - .env
-  - .env.*
-  - *.Zone.Identifier
+  ## Configuración de importación desde GENSPARK
+  ## Define reglas de mapeo y exclusiones para sincronizar contenido externo de forma segura.
+  version: 1
 
-# Comportamiento
-options:
-  overwrite: true        # Sobrescribir archivos si cambian
-  delete_extraneous: false # No borrar archivos que no existan en la fuente
-  preserve_times: true
-  preserve_perms: true
-  dry_run_default: true    # Por defecto, mostrar diff sin escribir
+  ## Rutas de destino dentro del repo actual y sus fuentes relativas
+  ## Si no se especifica, se preserva la estructura original de la fuente.
+  mappings:
+    # Importación segura: trae TODO el contenido de la fuente a una carpeta aislada
+    # dentro del repositorio actual para revisión y posterior cherry-pick.
+    - from: .
+      to: integrations/genspark
+
+  ## Exclusiones comunes al importar (patrones rsync)
+  exclude:
+    - .git/
+    - node_modules/
+    - dist/
+    - build/
+    - .vscode/
+    - .vscode-server/
+    - .idea/
+    - logs/
+    - "*.log"
+    - tmp/
+    - temp/
+    - .env
+    - .env.*
+    - "*.Zone.Identifier"
+    - __pycache__/
+    - .pytest_cache/
+    - .hypothesis/
+    - coverage/
+    - .coverage
+    - coverage.xml
+    - "*.pyc"
+    - .venv/
+    - .DS_Store
+
+  ## Comportamiento
+  options:
+    overwrite: true         # Sobrescribir archivos si cambian
+    delete_extraneous: false # No borrar archivos que no existan en la fuente
+    preserve_times: true
+    preserve_perms: true
+    dry_run_default: true   # Por defecto, mostrar diff sin escribir
