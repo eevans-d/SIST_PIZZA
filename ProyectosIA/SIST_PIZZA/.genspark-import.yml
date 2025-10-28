@@ -1,12 +1,16 @@
 # Configuración de importación desde GENSPARK
-# Define reglas de mapeo y exclusiones para sincronizar contenido externo
+# Define reglas de mapeo y exclusiones para sincronizar contenido externo de forma segura
 
 version: 1
 
 # Rutas de destino dentro del repo actual y sus fuentes relativas
 # Si no se especifica, se preserva la estructura original de la fuente
 mappings:
-  # Ejemplos de mapeo (activa los que necesites)
+  # Importación segura: trae TODO el contenido de la fuente a una carpeta aislada
+  # dentro del repositorio actual para revisión y posterior cherry-pick.
+  - from: .
+    to: integrations/genspark
+  # Ejemplos de mapeo directo (actívalos si los necesitas)
   # - from: backend/
   #   to: backend/
   # - from: docs/
@@ -28,17 +32,26 @@ exclude:
   - .vscode-server/
   - .idea/
   - logs/
-  - *.log
+  - "*.log"
   - tmp/
   - temp/
   - .env
   - .env.*
-  - *.Zone.Identifier
+  - "*.Zone.Identifier"
+  - __pycache__/
+  - .pytest_cache/
+  - .hypothesis/
+  - coverage/
+  - .coverage
+  - coverage.xml
+  - "*.pyc"
+  - .venv/
+  - .DS_Store
 
 # Comportamiento
 options:
-  overwrite: true        # Sobrescribir archivos si cambian
+  overwrite: true         # Sobrescribir archivos si cambian
   delete_extraneous: false # No borrar archivos que no existan en la fuente
   preserve_times: true
   preserve_perms: true
-  dry_run_default: true    # Por defecto, mostrar diff sin escribir
+  dry_run_default: true   # Por defecto, mostrar diff sin escribir

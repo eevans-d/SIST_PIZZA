@@ -7,6 +7,32 @@
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 ═══════════════════════════════════════════════════════════════════════════════
+🔄 SYNC 2025-10-28: Cambios integrados desde GitHub
+═══════════════════════════════════════════════════════════════════════════════
+
+Estado de sincronización:
+- Se fusionó origin/main en la rama actual `integrate/genspark_20251026`.
+- Incluye nuevas features y pruebas agregadas en GitHub (vía PR genspark_ai_developer):
+	- Endpoints mínimos API: GET /api/menu, GET /api/pedidos/:id, PATCH /api/pedidos/:id
+	- Admin de menú: POST /api/menu y PATCH /api/menu/:id
+	- Tickets: POST /api/tickets
+	- Seguridad/observabilidad: rate limiting (+ middleware), /metrics Prometheus
+	- Monitoring: dashboard Grafana actualizado
+	- Tests contractuales y mocks supabase añadidos
+	- Migración SQL adicional: 20250125000002_add_missing_tables.sql
+
+Qué ya hice en esta máquina:
+- npm ci en `backend` (dependencias actualizadas)
+- Build del backend exitoso: `npm run build`
+
+Siguientes pasos rápidos (recomendado ahora):
+- Ejecutar tests: `cd backend && npm test`
+- Verificar health: `curl http://localhost:4000/health` y `curl http://localhost:4000/api/health`
+- Si no has corrido las migraciones nuevas: aplicar SQL en Supabase según `supabase/migrations/20250125000002_add_missing_tables.sql` o los archivos de `docs/`
+
+Nota: Este checklist ya contempla estas validaciones en las Fases 2, 5 y 6. Continúa desde allí.
+
+═══════════════════════════════════════════════════════════════════════════════
 ⚡ RUTA 1: MVP (20 minutos) - EMPIEZA AQUÍ
 ═══════════════════════════════════════════════════════════════════════════════
 
