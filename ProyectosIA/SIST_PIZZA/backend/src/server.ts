@@ -17,6 +17,8 @@ import express, {
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import metricsRouter, { metricsMiddleware } from './services/metrics';
+import { apiLimiter } from './middleware/rateLimiter';
 import { safeLogger } from './lib/logger';
 import { config } from './config';
 
@@ -70,6 +72,15 @@ export function createApp(): Express {
   );
 
   // ============================================================================
+  // MÉTRICAS (PROMETHEUS)
+  // Middleware para tracking automático de requests
+  app.use(metricsMiddleware);
+  // Endpoint de métricas para Prometheus
+  app.use(metricsRouter);
+
+  // Rate limiting general para API
+  app.use('/api/', apiLimiter);
+
   // HEALTHCHECK
   // ============================================================================
 
@@ -170,6 +181,22 @@ export function createApp(): Express {
   // Webhook N8N para pedidos procesados por Claude
   const webhookN8N = require('./workflows/webhookN8N').default;
   app.use(webhookN8N);
+
+  // Tickets de soporte (strict rate limit)
+  const ticketsRouter = require('./workflows/tickets').default;
+  app.use(ticketsRouter);
+
+  // Pedidos (estado)
+  const pedidosRouter = require('./workflows/pedidos').default;
+  app.use(pedidosRouter);
+
+  // Menú (admin)
+  const menuRouter = require('./workflows/menu').default;
+  app.use(menuRouter);
+
+  // Endpoints REST mínimos
+  const apiRoutes = require('./routes').default;
+  app.use(apiRoutes);
 
   // ============================================================================
   // RUTAS FUTURAS A IMPLEMENTAR
