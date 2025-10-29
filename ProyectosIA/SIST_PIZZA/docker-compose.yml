@@ -26,8 +26,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: sist-pizza-redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -44,19 +42,18 @@ services:
       context: ./backend
       dockerfile: ../docker/Dockerfile.backend
     container_name: sist-pizza-backend
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: development
       PORT: 3000
       LOG_LEVEL: debug
-      SUPABASE_URL: http://localhost:54321
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cGFiYXNlLXJlZiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjc4OTAwMDAwLCJleHAiOjE2Nzk1MDAwMDB9}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cGFiYXNlLXJlZiIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE2Nzg5MDAwMDAsImV4cCI6MTY3OTUwMDAwMH0}
       REDIS_URL: redis://redis:6379
       CLAUDE_API_KEY: ${CLAUDE_API_KEY}
       MODO_API_KEY: ${MODO_API_KEY}
       CHATWOOT_API_KEY: ${CHATWOOT_API_KEY}
     ports:
-      - "3000:3000"
+      - "4000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,7 +61,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend/src:/app/src
-    command: npm run dev
+    command: npm run start
     networks:
       - sist-pizza-network
 
@@ -74,9 +71,9 @@ services:
       context: ./frontend
       dockerfile: ../docker/Dockerfile.frontend
     container_name: sist-pizza-frontend
+    env_file:
+      - ./backend/.env
     environment:
-      VITE_SUPABASE_URL: http://localhost:54321
-      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cGFiYXNlLXJlZiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjc4OTAwMDAwLCJleHAiOjE2Nzk1MDAwMDB9}
       VITE_API_URL: http://localhost:3000
     ports:
       - "5173:5173"

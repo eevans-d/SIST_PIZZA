@@ -47,9 +47,10 @@ ok "Redis healthy"
 info "Levantando backend, prometheus y grafana..."
 docker compose up -d backend prometheus grafana
 
-info "Esperando al backend (hasta 60s)..."
+API_BASE=${API_URL:-http://localhost:4000}
+info "Esperando al backend (hasta 60s) en ${API_BASE}..."
 SECS=0
-until curl -fsS http://localhost:3000/health >/dev/null 2>&1; do
+until curl -fsS "${API_BASE}/health" >/dev/null 2>&1; do
   sleep 3; SECS=$((SECS+3)); [[ $SECS -gt 60 ]] && { err "Backend no responde en /health"; exit 5; }
   info "Backend aún iniciando..."
 done
@@ -58,10 +59,10 @@ ok "Backend responde /health"
 cat <<EOF
 
 Endpoints útiles:
-- Backend API:           http://localhost:3000
-  • Health:              http://localhost:3000/health
-  • Health (detalle):    http://localhost:3000/api/health
-  • Métricas Prometheus: http://localhost:3000/metrics
+- Backend API:           ${API_BASE}
+  • Health:              ${API_BASE}/health
+  • Health (detalle):    ${API_BASE}/api/health
+  • Métricas Prometheus: ${API_BASE}/metrics
 - Prometheus:            http://localhost:9090
 - Grafana:               http://localhost:3001  (user: admin, pass por env GRAFANA_PASSWORD o 'admin')
 
