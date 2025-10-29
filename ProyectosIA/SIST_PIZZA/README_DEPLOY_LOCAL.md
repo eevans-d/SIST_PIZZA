@@ -65,6 +65,19 @@ Respuesta esperada: HTTP 200 con `pedido_id`, `total`, `subtotal`, `costo_envio`
 docker compose down
 ```
 
+## 7) Post-deploy check (opcional)
+Ejecuta una verificación integral (health, api/health, metrics, webhook de ejemplo y targets de Prometheus):
+
+```
+./scripts/post-deploy-check.sh
+```
+
+Puedes pasar URLs alternativas si cambiaste puertos:
+
+```
+./scripts/post-deploy-check.sh http://localhost:4000 http://localhost:9090
+```
+
 ## Notas
 - Redis no expone puerto en el host; el backend se conecta por red interna del Compose.
 - El backend se ejecuta en modo producción (`npm run start`) dentro del contenedor.
