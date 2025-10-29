@@ -33,6 +33,39 @@ Siguientes pasos rápidos (recomendado ahora):
 Nota: Este checklist ya contempla estas validaciones en las Fases 2, 5 y 6. Continúa desde allí.
 
 ═══════════════════════════════════════════════════════════════════════════════
+🚀 Despliegue local 2025-10-29: Estado y verificación
+═══════════════════════════════════════════════════════════════════════════════
+
+Resultado del despliegue local (Docker Compose):
+- Backend en producción expuesto en http://localhost:4000 → /health OK (200), /api/health OK (200), /metrics OK (200)
+- Prometheus en http://localhost:9090 → 5 targets activos ("up")
+- Grafana en http://localhost:3001 → status database: ok
+
+Webhook E2E validado:
+```
+POST /api/webhooks/n8n/pedido
+Payload:
+{
+	"cliente": {"nombre": "Test User", "telefono": "+541112345679", "direccion": "Avenida Norte 456"},
+	"items": [{"nombre": "Muzzarella", "cantidad": 1}],
+	"notas": "sin aceitunas",
+	"origen": "web"
+}
+→ Respuesta 200: { success: true, pedido_id, total, subtotal, costo_envio }
+```
+
+Ajustes aplicados al despliegue:
+- Backend publicado en 4000:3000 (evita conflicto de puertos)
+- Redis sin puerto publicado (solo red interna)
+- backend/.env inyectado vía env_file
+- Backend arranca con `npm run start` (build de producción)
+
+Siguiente (cuando toque producción/QA):
+- Aplicar migraciones en Supabase (cloud) si faltaran: `supabase/migrations/20250125000002_add_missing_tables.sql`
+- Ejecutar suite de tests (Ruta 2, Fase 5) para cobertura y contratos
+- Revisar dashboard Grafana importado y alertas en Prometheus
+
+═══════════════════════════════════════════════════════════════════════════════
 ⚡ RUTA 1: MVP (20 minutos) - EMPIEZA AQUÍ
 ═══════════════════════════════════════════════════════════════════════════════
 
