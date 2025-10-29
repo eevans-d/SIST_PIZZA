@@ -66,6 +66,23 @@ Siguiente (cuando toque producción/QA):
 - Revisar dashboard Grafana importado y alertas en Prometheus
 
 ═══════════════════════════════════════════════════════════════════════════════
+✅ Cierre 2025-10-29
+═══════════════════════════════════════════════════════════════════════════════
+
+Estado final del día:
+- [x] Consolidación en main
+- [x] Despliegue local estable (backend, prometheus, grafana)
+- [x] Smoke checks OK (/health, /api/health, /metrics)
+- [x] Webhook E2E OK (pedido creado en BD)
+- [x] Monitoring activo (Prometheus con 5 targets, Grafana OK)
+
+Próximos pasos recomendados:
+- [ ] Aplicar migraciones pendientes en Supabase cloud (si faltan)
+- [ ] Ejecutar suite completa de tests cuando el entorno productivo esté listo
+- [ ] Validar dashboards en Grafana y configurar alertas
+- [ ] Preparar PR/release notes para despliegue externo
+
+═══════════════════════════════════════════════════════════════════════════════
 ⚡ RUTA 1: MVP (20 minutos) - EMPIEZA AQUÍ
 ═══════════════════════════════════════════════════════════════════════════════
 
