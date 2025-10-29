@@ -59,11 +59,11 @@ jobs:
       - name: Install dependencies
         run: cd frontend && npm ci
       
-      - name: TypeScript check
-        run: cd frontend && npm run build
+      - name: TypeScript check (no emit)
+        run: cd frontend && npm run type-check
       
       - name: Run linter
-        run: cd frontend && npm run lint || true
+        run: cd frontend && npm run lint -- --max-warnings=0
       
       - name: Run tests
         run: cd frontend && npm test || true
