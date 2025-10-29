@@ -1,5 +1,19 @@
 # 🎉 SIST_PIZZA - Progreso Actual
 
+**Actualización:** 2025-10-29 — Fase 0 y Fase 1
+
+- Baseline (Fase 0) ejecutada y documentada:
+	- `scripts/baseline-run.sh` (latencias `/health`, `/api/health`, webhook) generando `docs/pre-deploy/baseline/baseline.csv` y reporte.
+	- Diagrama de arquitectura en `docs/architecture/diagram.md`.
+- CI Gates (Fase 1) activados:
+	- Backend: Typecheck bloqueante, `npm audit` prod/high bloqueante, lint advisory (warnings visibles, sin bloquear). Config en `backend/.eslintrc.cjs` y workflow ajustado.
+	- Frontend: ESLint TS+React añadido; type-check bloqueante (`tsc --noEmit`), lint bloqueante (`--max-warnings=0`), `npm audit` prod/high bloqueante.
+- Workflows actualizados: `.github/workflows/ci.yml` con gates por módulo; job de seguridad mantiene Snyk (no-bloqueante) y CodeQL.
+
+Siguiente: observar la primera corrida del CI, endurecer lint progresivamente y pasar a Fase 2 (tests + coverage como gates).
+
+---
+
 **Fecha:** 2025-10-22  
 **Sesión:** Módulo 2 (Backend) ✅ + Módulo 3 (Supabase) 📚 + Módulo 1 (Canales) 🚀
 
