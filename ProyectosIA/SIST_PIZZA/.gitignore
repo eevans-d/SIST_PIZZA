@@ -59,3 +59,12 @@ temp/
 
 # Directorio ProyectosIA (evitar submódulos no deseados)
 ProyectosIA/
+
+# Coverage/Reports
+coverage/
+**/coverage/
+.nyc_output/
+**/.nyc_output/
+coverage-final.json
+junit.xml
+junit-*.xml

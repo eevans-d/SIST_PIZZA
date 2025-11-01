@@ -49,7 +49,7 @@ export async function procesarMensajeEntrante(
     // 1. BUSCAR O CREAR CLIENTE
     // ========================================================================
 
-    let cliente = await buscarOCrearCliente(telefonoEntrada);
+    const cliente = await buscarOCrearCliente(telefonoEntrada);
 
     if (!cliente) {
       safeLogger.error('Failed to get or create client');

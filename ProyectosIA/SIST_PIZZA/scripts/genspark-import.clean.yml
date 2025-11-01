@@ -1,0 +1,35 @@
+# Configuración de importación desde GENSPARK (limpia)
+version: 1
+mappings:
+  - from: .
+    to: integrations/genspark
+exclude:
+  - .git/
+  - node_modules/
+  - dist/
+  - build/
+  - .vscode/
+  - .vscode-server/
+  - .idea/
+  - logs/
+  - "*.log"
+  - tmp/
+  - temp/
+  - .env
+  - .env.*
+  - "*.Zone.Identifier"
+  - __pycache__/
+  - .pytest_cache/
+  - .hypothesis/
+  - coverage/
+  - .coverage
+  - coverage.xml
+  - "*.pyc"
+  - .venv/
+  - .DS_Store
+options:
+  overwrite: true
+  delete_extraneous: false
+  preserve_times: true
+  preserve_perms: true
+  dry_run_default: true

@@ -2,129 +2,132 @@ global:
   resolve_timeout: 5m
   slack_api_url: '${SLACK_WEBHOOK_URL}'
 
+# Plantilla de notificaciones
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Ruta de notificaciones
 route:
-  receiver: 'slack-notifications'
-  group_by: ['alertname', 'cluster', 'service']
+  group_by: ['alertname', 'severity', 'component']
   group_wait: 10s
   group_interval: 10s
-  repeat_interval: 12h
-
+  repeat_interval: 3h
+  receiver: 'default-receiver'
+  
   routes:
-    # Critical alerts - immediate notification
+    # Alertas críticas a múltiples canales
     - match:
         severity: critical
-      receiver: 'slack-critical'
-      group_wait: 0s
-      repeat_interval: 5m
+      receiver: 'critical-alerts'
       continue: true
-
-    # Business alerts - daily digest
+    
+    # Alertas de negocio
     - match:
         component: business
-      receiver: 'slack-business'
-      group_wait: 1m
-      repeat_interval: 24h
-
-    # Infrastructure warnings - 30m
+      receiver: 'business-alerts'
+    
+    # Alertas de base de datos
     - match:
-        component: infrastructure
-      receiver: 'slack-infrastructure'
-      group_wait: 5m
-      repeat_interval: 30m
+        component: database
+      receiver: 'database-alerts'
+    
+    # Alertas de Redis
+    - match:
+        component: redis
+      receiver: 'redis-alerts'
+    
+    # Alertas de integraciones
+    - match:
+        component: integrations
+      receiver: 'integration-alerts'
 
+# Receptores de alertas
 receivers:
-  # Critical receiver with PagerDuty escalation
-  - name: 'slack-critical'
-    slack_configs:
-      - channel: '#sist-pizza-critical'
-        title: '🚨 ALERTA CRÍTICA'
-        text: |
-          {{ .GroupLabels.alertname }}
-          Componente: {{ .CommonLabels.component }}
-          Severidad: {{ .CommonLabels.severity }}
-          
-          {{ range .Alerts }}
-            • {{ .Labels.instance }}: {{ .Annotations.description }}
-          {{ end }}
-        send_resolved: true
-        color: 'danger'
-        actions:
-          - type: button
-            text: 'Ver en Grafana'
-            url: 'http://localhost:3001/d/sist-pizza-dashboard'
-          - type: button
-            text: 'Ver en Prometheus'
-            url: 'http://localhost:9090'
-
-    # PagerDuty escalation for critical
-    pagerduty_configs:
-      - service_key: '${PAGERDUTY_SERVICE_KEY}'
-        description: '{{ .GroupLabels.alertname }}'
-        details:
-          component: '{{ .CommonLabels.component }}'
-          severity: '{{ .CommonLabels.severity }}'
-
-  # General notifications
-  - name: 'slack-notifications'
+  - name: 'default-receiver'
     slack_configs:
       - channel: '#sist-pizza-alerts'
-        title: '⚠️ ALERTA: {{ .GroupLabels.alertname }}'
-        text: |
-          Severidad: {{ .CommonLabels.severity }}
-          Componente: {{ .CommonLabels.component }}
-          
+        title: '{{ .GroupLabels.alertname }}'
+        text: >-
           {{ range .Alerts }}
-            📌 {{ .Labels.instance }}
-            {{ .Annotations.summary }}
-            {{ .Annotations.description }}
+            *Alert:* {{ .Annotations.summary }}
+            *Description:* {{ .Annotations.description }}
+            *Severity:* {{ .Labels.severity }}
+            *Component:* {{ .Labels.component }}
           {{ end }}
         send_resolved: true
-        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
 
-  # Business metrics receiver
-  - name: 'slack-business'
+  - name: 'critical-alerts'
+    slack_configs:
+      - channel: '#sist-pizza-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: >-
+          {{ range .Alerts }}
+            *Alert:* {{ .Annotations.summary }}
+            *Description:* {{ .Annotations.description }}
+            *Component:* {{ .Labels.component }}
+            *Status:* {{ .Status }}
+          {{ end }}
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+    
+    # PagerDuty para alertas críticas (opcional)
+    # pagerduty_configs:
+    #   - service_key: '${PAGERDUTY_SERVICE_KEY}'
+    #     description: '{{ .GroupLabels.alertname }}: {{ .Annotations.summary }}'
+
+  - name: 'business-alerts'
     slack_configs:
       - channel: '#sist-pizza-business'
-        title: '📊 Métrica de Negocio: {{ .GroupLabels.alertname }}'
-        text: |
+        title: '📊 Business Alert: {{ .GroupLabels.alertname }}'
+        text: >-
           {{ range .Alerts }}
-            {{ .Annotations.summary }}
-            {{ .Annotations.description }}
+            *Alert:* {{ .Annotations.summary }}
+            *Description:* {{ .Annotations.description }}
           {{ end }}
-        send_resolved: false
-        color: 'good'
 
-  # Infrastructure receiver
-  - name: 'slack-infrastructure'
+  - name: 'database-alerts'
     slack_configs:
-      - channel: '#sist-pizza-infrastructure'
-        title: '🔧 Infraestructura: {{ .GroupLabels.alertname }}'
-        text: |
+      - channel: '#sist-pizza-database'
+        title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: >-
           {{ range .Alerts }}
-            Instancia: {{ .Labels.instance }}
-            {{ .Annotations.description }}
+            *Alert:* {{ .Annotations.summary }}
+            *Description:* {{ .Annotations.description }}
           {{ end }}
-        send_resolved: true
-        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
 
+  - name: 'redis-alerts'
+    slack_configs:
+      - channel: '#sist-pizza-cache'
+        title: '🔴 Redis Alert: {{ .GroupLabels.alertname }}'
+        text: >-
+          {{ range .Alerts }}
+            *Alert:* {{ .Annotations.summary }}
+            *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  - name: 'integration-alerts'
+    slack_configs:
+      - channel: '#sist-pizza-integrations'
+        title: '🔗 Integration Alert: {{ .GroupLabels.alertname }}'
+        text: >-
+          {{ range .Alerts }}
+            *Alert:* {{ .Annotations.summary }}
+            *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+# Configuración de inhibición
 inhibit_rules:
-  # Suppress warnings if critical alert exists for same component
+  # Si el servicio está caído, no alertar sobre latencia
   - source_match:
       severity: 'critical'
+      alertname: 'BackendDown'
     target_match:
       severity: 'warning'
-    equal: ['alertname', 'component']
-
-  # Suppress info if warning exists for same component
+    equal: ['component']
+  
+  # Si hay alta tasa de error, no alertar sobre latencia
   - source_match:
-      severity: 'warning'
+      alertname: 'CriticalErrorRate'
     target_match:
-      severity: 'info'
-    equal: ['alertname', 'component']
-
-  # Don't alert on service restart during maintenance
-  - source_match:
-      alertname: 'ServiceDown'
-    target_match:
-      alertname: 'FrequentPodRestarts'
-    equal: ['pod_name']
+      alertname: 'HighLatency'
+    equal: ['component']

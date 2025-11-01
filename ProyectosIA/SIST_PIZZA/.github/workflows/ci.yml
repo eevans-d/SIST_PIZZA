@@ -9,33 +9,33 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
-      
+
       - name: Install dependencies
         run: cd backend && npm ci
-      
+
       - name: Security audit (prod deps, fail on high)
         run: cd backend && npm audit --audit-level=high --omit=dev
 
       - name: TypeScript check
         run: cd backend && npm run build
-      
+
       - name: Run linter
         run: cd backend && npm run lint -- --max-warnings=0
-      
+
       - name: Run tests
         run: cd backend && npm run test:coverage
 
@@ -45,57 +45,60 @@ jobs:
         with:
           name: backend-coverage-${{ matrix.node-version }}
           path: backend/coverage
-  
+
   frontend:
+    # Ejecuta el job solo si existe un frontend (detectado por package.json)
+    if: ${{ hashFiles('frontend/package.json') != '' }}
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      
+
       - name: Install dependencies
         run: cd frontend && npm ci
-      
+
       - name: Security audit (prod deps, fail on high)
         run: cd frontend && npm audit --audit-level=high --omit=dev
 
       - name: TypeScript check (no emit)
         run: cd frontend && npm run type-check
-      
+
       - name: Run linter
         run: cd frontend && npm run lint -- --max-warnings=0
-      
+
       - name: Run tests
         run: cd frontend && npm test || true
 
   security:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Run Snyk security scan
+        if: ${{ secrets.SNYK_TOKEN != '' }}
         uses: snyk/actions/node@master
         with:
           args: --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
-      
+
       - name: Run CodeQL Analysis
         uses: github/codeql-action/init@v2
         with:
           languages: 'javascript, typescript'
-      
+
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
