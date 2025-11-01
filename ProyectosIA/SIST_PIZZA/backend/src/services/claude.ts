@@ -98,7 +98,7 @@ export function getClaudeClient(): Anthropic {
 /**
  * Circuit breaker state para Claude API
  */
-let circuitBreakerState: {
+const circuitBreakerState: {
   failures: number;
   lastFailureTime: number;
   isOpen: boolean;
