@@ -82,7 +82,52 @@ export function validateChatwootWebhook(
     });
   }
 
-  // TODO: Validar firma (X-Webhook-Signature)
+  // Validar firma HMAC (X-Chatwoot-Signature)
+  const secret = process.env.CHATWOOT_WEBHOOK_SECRET;
+  if (secret) {
+    const signature = req.headers['x-chatwoot-signature'] as string;
+    const rawBody = (req as any).rawBody;
+
+    if (!signature) {
+      safeLogger.warn('Chatwoot webhook rejected - missing signature');
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Firma faltante',
+      });
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody || '')
+      .digest('hex');
+
+    // Comparación time-safe
+    try {
+      if (!crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature)
+      )) {
+        safeLogger.warn('Chatwoot webhook rejected - invalid signature', {
+          signaturePrefix: signature.slice(0, 8) + '...',
+        });
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Firma inválida',
+        });
+      }
+    } catch (err) {
+      // Buffer length mismatch
+      safeLogger.warn('Chatwoot webhook rejected - signature length mismatch');
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Firma inválida',
+      });
+    }
+    
+    safeLogger.info('Chatwoot webhook signature validated successfully');
+  } else {
+    safeLogger.warn('CHATWOOT_WEBHOOK_SECRET not configured - skipping HMAC validation');
+  }
 
   next();
 }
@@ -107,6 +152,53 @@ export function validateModoWebhook(
       error: 'Forbidden',
       message: 'Acceso rechazado',
     });
+  }
+
+  // Validar firma HMAC (X-Modo-Signature)
+  const secret = process.env.MODO_WEBHOOK_SECRET;
+  if (secret) {
+    const signature = req.headers['x-modo-signature'] as string;
+    const rawBody = (req as any).rawBody;
+
+    if (!signature) {
+      safeLogger.warn('MODO webhook rejected - missing signature');
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Firma faltante',
+      });
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody || '')
+      .digest('hex');
+
+    // Comparación time-safe
+    try {
+      if (!crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature)
+      )) {
+        safeLogger.warn('MODO webhook rejected - invalid signature', {
+          signaturePrefix: signature.slice(0, 8) + '...',
+        });
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Firma inválida',
+        });
+      }
+    } catch (err) {
+      // Buffer length mismatch
+      safeLogger.warn('MODO webhook rejected - signature length mismatch');
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Firma inválida',
+      });
+    }
+    
+    safeLogger.info('MODO webhook signature validated successfully');
+  } else {
+    safeLogger.warn('MODO_WEBHOOK_SECRET not configured - skipping HMAC validation');
   }
 
   next();

@@ -83,6 +83,34 @@ services:
     networks:
       - sist-pizza-network
 
+  # PostgreSQL Exporter
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: sist-pizza-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-sist_pizza}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9187:9187"
+    networks:
+      - sist-pizza-network
+
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: sist-pizza-redis-exporter
+    environment:
+      REDIS_ADDR: redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "9121:9121"
+    networks:
+      - sist-pizza-network
+
   # Prometheus (Monitoring)
   prometheus:
     image: prom/prometheus:latest
