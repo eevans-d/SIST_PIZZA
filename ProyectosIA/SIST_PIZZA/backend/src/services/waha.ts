@@ -1,13 +1,13 @@
 /**
  * 🧠 WAHA Service - Cliente directo para WhatsApp
- * 
+ *
  * Cliente de respaldo para WAHA (WhatsApp HTTP API) en caso de que N8N falle.
  * WAHA permite enviar y recibir mensajes de WhatsApp sin necesidad de intermediarios.
- * 
+ *
  * Referencias:
  * - WAHA Docs: https://waha.devlike.pro/
  * - GitHub: https://github.com/devlikeapro/whatsapp-http-api
- * 
+ *
  * Características:
  * - Envío de mensajes de texto
  * - Envío de mensajes con botones
@@ -125,7 +125,7 @@ const circuitBreaker = new WAHACircuitBreaker();
 export function formatPhoneNumber(phone: string): string {
   // Remover caracteres no numéricos
   const cleanPhone = phone.replace(/\D/g, '');
-  
+
   // Agregar formato WhatsApp
   return `${cleanPhone}@c.us`;
 }
@@ -194,7 +194,7 @@ export class WAHAService {
         throw new Error(`WAHA API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
+  const data = (await response.json()) as WAHASessionStatus;
       circuitBreaker.recordSuccess();
 
       safeLogger.info('WAHA session status retrieved', {
@@ -202,7 +202,7 @@ export class WAHAService {
         status: data.status,
       });
 
-      return data;
+  return data;
     } catch (error) {
       circuitBreaker.recordFailure();
       safeLogger.error('Failed to get WAHA session status', {
@@ -264,7 +264,7 @@ export class WAHAService {
           );
         }
 
-        const data: WAHAResponse = await response.json();
+  const data = (await response.json()) as WAHAResponse;
         circuitBreaker.recordSuccess();
 
         safeLogger.info('WAHA message sent successfully', {
@@ -349,7 +349,7 @@ export class WAHAService {
         throw new Error(`WAHA API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: WAHAResponse = await response.json();
+  const data = (await response.json()) as WAHAResponse;
       circuitBreaker.recordSuccess();
 
       safeLogger.info('WAHA button message sent successfully', {
@@ -412,7 +412,7 @@ export const wahaService = new WAHAService();
 
 /**
  * Helper function: Enviar mensaje con fallback a N8N
- * 
+ *
  * Intenta enviar vía WAHA primero. Si falla, puede usar N8N como fallback.
  */
 export async function sendWhatsAppMessage(
@@ -448,7 +448,7 @@ export async function sendWhatsAppMessage(
   // Intento 2: N8N (fallback)
   if (useN8N) {
     safeLogger.info('Attempting to send WhatsApp message via N8N fallback');
-    
+
     // TODO: Implementar llamada a N8N webhook como fallback
     // const n8nResult = await sendViaN8N(to, text);
     // return n8nResult;

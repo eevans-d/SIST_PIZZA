@@ -129,7 +129,8 @@ register.setDefaultLabels({
   version: process.env.APP_VERSION || 'dev',
   commit: process.env.GIT_SHA || 'local',
 });
-collectDefaultMetrics({ register, timeout: 10000 });
+// Nota: prom-client@15 ya no acepta la opción 'timeout' en collectDefaultMetrics
+collectDefaultMetrics({ register });
 
 // Export metrics endpoint
 const metricsRouter = Router();
