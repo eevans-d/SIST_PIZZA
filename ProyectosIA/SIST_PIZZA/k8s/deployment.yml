@@ -25,7 +25,7 @@ type: Opaque
 stringData:
   DB_PASSWORD: "${DB_PASSWORD}"
   SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}"
-  SUPABASE_SERVICE_KEY: "${SUPABASE_SERVICE_KEY}"
+  SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
   CLAUDE_API_KEY: "${CLAUDE_API_KEY}"
   MODO_API_KEY: "${MODO_API_KEY}"
   CHATWOOT_API_KEY: "${CHATWOOT_API_KEY}"
@@ -93,7 +93,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /health/ready
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 5

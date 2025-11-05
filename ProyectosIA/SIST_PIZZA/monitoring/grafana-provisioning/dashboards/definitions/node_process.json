@@ -1,0 +1,48 @@
+{
+  "dashboard": {
+    "title": "Node.js Process Metrics",
+    "tags": ["node", "process", "backend"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": { "from": "now-1h", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Event Loop Lag (ms)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          { "expr": "nodejs_eventloop_lag_seconds * 1000" }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Heap Used (MB)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          { "expr": "process_resident_memory_bytes / 1024 / 1024" }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Open File Descriptors",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          { "expr": "process_open_fds" }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "CPU User/System (seconds)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          { "expr": "rate(process_cpu_user_seconds_total[5m])" },
+          { "expr": "rate(process_cpu_system_seconds_total[5m])" }
+        ]
+      }
+    ]
+  }
+}

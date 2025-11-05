@@ -5,11 +5,23 @@
  * - Limitar tokens por sesión ($0.10 USD ≈ 6.6K tokens)
  * - Rate limiting automático
  * - Context para diferentes flujos
+ * - Resiliencia: Retry con backoff exponencial + jitter
+ * - Circuit breaker: Bloquear llamadas después de múltiples fallos
+ * - Timeout: 30 segundos por request
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 import { safeLogger } from '../lib/logger';
+import { getCachedResponse, setCachedResponse } from './claude-cache';
+import {
+  claudeAPIRequests,
+  claudeAPIErrors,
+  claudeCircuitBreakerState,
+  claudeCircuitBreakerFailures,
+  claudeTokensUsed,
+  claudeRequestDuration,
+} from './metrics';
 
 /**
  * Tipos de flujo soportados
@@ -84,7 +96,92 @@ export function getClaudeClient(): Anthropic {
 }
 
 /**
- * Llamar a Claude con contexto seguro
+ * Circuit breaker state para Claude API
+ */
+const circuitBreakerState: {
+  failures: number;
+  lastFailureTime: number;
+  isOpen: boolean;
+} = {
+  failures: 0,
+  lastFailureTime: 0,
+  isOpen: false,
+};
+
+const CIRCUIT_BREAKER_THRESHOLD = 5; // Abrir después de 5 fallos
+const CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minuto
+const REQUEST_TIMEOUT = 30000; // 30 segundos
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF = 1000; // 1 segundo
+
+/**
+ * Función helper: esperar con timeout
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Función helper: calcular backoff exponencial con jitter
+ */
+function calculateBackoff(attempt: number): number {
+  const exponential = INITIAL_BACKOFF * Math.pow(2, attempt);
+  const jitter = Math.random() * 1000; // 0-1000ms de jitter
+  return Math.min(exponential + jitter, 10000); // Max 10 segundos
+}
+
+/**
+ * Función helper: reset circuit breaker si ha pasado suficiente tiempo
+ */
+function checkCircuitBreaker(): void {
+  const now = Date.now();
+  if (circuitBreakerState.isOpen) {
+    if (now - circuitBreakerState.lastFailureTime > CIRCUIT_BREAKER_TIMEOUT) {
+      safeLogger.info('Circuit breaker reset');
+      circuitBreakerState.failures = 0;
+      circuitBreakerState.isOpen = false;
+    }
+  }
+}
+
+/**
+ * Función helper: registrar fallo del circuit breaker
+ */
+function recordFailure(): void {
+  circuitBreakerState.failures++;
+  circuitBreakerState.lastFailureTime = Date.now();
+  
+  // Actualizar métricas
+  claudeCircuitBreakerFailures.set(circuitBreakerState.failures);
+  
+  if (circuitBreakerState.failures >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitBreakerState.isOpen = true;
+    claudeCircuitBreakerState.set(1);
+    safeLogger.error('Circuit breaker opened', {
+      failures: circuitBreakerState.failures,
+    });
+  }
+}
+
+/**
+ * Función helper: registrar éxito del circuit breaker
+ */
+function recordSuccess(): void {
+  if (circuitBreakerState.failures > 0) {
+    circuitBreakerState.failures = Math.max(0, circuitBreakerState.failures - 1);
+    claudeCircuitBreakerFailures.set(circuitBreakerState.failures);
+  }
+  
+  // Si el circuit breaker estaba abierto, cerrarlo
+  if (circuitBreakerState.isOpen) {
+    circuitBreakerState.isOpen = false;
+    claudeCircuitBreakerState.set(0);
+    safeLogger.info('Circuit breaker closed after successful request');
+  }
+}
+
+/**
+ * Llamar a Claude con contexto seguro, resiliencia y circuit breaker
  */
 export async function llamarClaude(
   userMessage: string,
@@ -92,40 +189,71 @@ export async function llamarClaude(
   contexto: ContextoClaude,
   options?: {
     maxTokens?: number;
+    timeout?: number;
   }
 ): Promise<string> {
-  try {
-    const client = getClaudeClient();
-    const maxTokens = options?.maxTokens || 500;
+  // 1. Verificar cache primero
+  const cachedResponse = await getCachedResponse(userMessage, flujo, contexto);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
 
-    // Validar límite de tokens por sesión (usar valor por defecto si no está configurado)
-    const maxTokensPerSession = config.claude?.maxTokensPerSession || 6600;
-    if (maxTokens > maxTokensPerSession) {
-      safeLogger.warn('Token limit exceeded for session', {
-        requested: maxTokens,
-        limit: maxTokensPerSession,
-      });
+  // 2. Verificar circuit breaker
+  checkCircuitBreaker();
+  if (circuitBreakerState.isOpen) {
+    safeLogger.warn('Circuit breaker is open, rejecting request');
+    return 'El servicio de IA está temporalmente no disponible. Por favor, intenta nuevamente en unos minutos o habla con un operador.';
+  }
 
-      return 'Lo siento, hubo un error en el procesamiento. Por favor, reintentar.';
-    }
+  const maxTokens = options?.maxTokens || 500;
+  const timeout = options?.timeout || REQUEST_TIMEOUT;
 
-    // Log seguro (sin PII)
-    safeLogger.info('Calling Claude API', {
-      flujo,
-      cliente_tipo: contexto.cliente_tipo,
-      zona: contexto.zona,
-      maxTokens,
+  // Validar límite de tokens por sesión
+  const maxTokensPerSession = config.claude?.maxTokensPerSession || 6600;
+  if (maxTokens > maxTokensPerSession) {
+    safeLogger.warn('Token limit exceeded for session', {
+      requested: maxTokens,
+      limit: maxTokensPerSession,
     });
+    return 'Lo siento, la solicitud excede el límite de tokens permitido. Por favor, simplifica tu consulta.';
+  }
 
-    const model = config.claude?.model || 'claude-3-5-sonnet-20241022';
-    const message = await (client as any).messages.create({
-      model,
-      max_tokens: maxTokens,
-      system: SYSTEM_PROMPTS[flujo],
-      messages: [
-        {
-          role: 'user' as const,
-          content: `[CONTEXTO]
+  // Retry con backoff exponencial
+  let lastError: Error | null = null;
+  const startTime = Date.now();
+  
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Log solo en primer intento
+      if (attempt === 0) {
+        safeLogger.info('Calling Claude API', {
+          flujo,
+          cliente_tipo: contexto.cliente_tipo,
+          zona: contexto.zona,
+          maxTokens,
+          timeout,
+        });
+      } else {
+        safeLogger.warn('Retrying Claude API', { attempt: attempt + 1 });
+      }
+
+      const client = getClaudeClient();
+      const model = config.claude?.model || 'claude-3-5-sonnet-20241022';
+
+      // Crear AbortController para timeout
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), timeout);
+
+      try {
+        const message = await (client as any).messages.create(
+          {
+            model,
+            max_tokens: maxTokens,
+            system: SYSTEM_PROMPTS[flujo],
+            messages: [
+              {
+                role: 'user' as const,
+                content: `[CONTEXTO]
 Cliente: ${contexto.cliente_tipo} (${contexto.pedidos_previos_count} pedidos anteriores)
 Zona: ${contexto.zona}
 Hora: ${contexto.hora_actual}
@@ -133,32 +261,102 @@ Horario laboral: ${contexto.es_horario_laboral ? 'Sí' : 'No'}
 
 [MENSAJE]
 ${userMessage}`,
-        },
-      ],
-    });
+              },
+            ],
+          },
+          {
+            signal: abortController.signal,
+          }
+        );
 
-    // Extraer respuesta
-    const response = message.content[0];
-    if ((response as any).type !== 'text') {
-      throw new Error('Unexpected response type from Claude');
+        clearTimeout(timeoutId);
+
+        // Extraer respuesta
+        const response = message.content[0];
+        if ((response as any).type !== 'text') {
+          throw new Error('Unexpected response type from Claude');
+        }
+
+        const inputTokens = (message as any).usage.input_tokens;
+        const outputTokens = (message as any).usage.output_tokens;
+        const duration = (Date.now() - startTime) / 1000;
+
+        safeLogger.info('Claude API response received', {
+          flujo,
+          inputTokens,
+          outputTokens,
+          attempt: attempt + 1,
+          duration,
+        });
+
+        // Actualizar métricas
+        claudeAPIRequests.inc({ flujo, status: 'success' });
+        claudeTokensUsed.inc({ type: 'input' }, inputTokens);
+        claudeTokensUsed.inc({ type: 'output' }, outputTokens);
+        claudeRequestDuration.observe({ flujo }, duration);
+
+        // Éxito: registrar, cachear y retornar
+        recordSuccess();
+        const responseText = (response as any).text;
+        
+        // Cachear respuesta (1 hora TTL)
+        await setCachedResponse(userMessage, flujo, contexto, responseText, 3600);
+        
+        return responseText;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Verificar si es un error recuperable
+      const isRecoverable =
+        lastError.message.includes('timeout') ||
+        lastError.message.includes('ECONNRESET') ||
+        lastError.message.includes('ETIMEDOUT') ||
+        lastError.message.includes('rate_limit') ||
+        lastError.message.includes('overloaded');
+
+      if (!isRecoverable || attempt === MAX_RETRIES - 1) {
+        // Error no recuperable o último intento
+        safeLogger.error('Claude API error (not retrying)', {
+          error: lastError.message,
+          flujo,
+          attempt: attempt + 1,
+        });
+        
+        // Actualizar métricas de error
+        claudeAPIRequests.inc({ flujo, status: 'error' });
+        claudeAPIErrors.inc({
+          flujo,
+          error_type: isRecoverable ? 'timeout' : 'api_error',
+        });
+        
+        recordFailure();
+        break;
+      }
+
+      // Esperar con backoff exponencial + jitter
+      const backoffMs = calculateBackoff(attempt);
+      safeLogger.warn('Claude API error (retrying)', {
+        error: lastError.message,
+        attempt: attempt + 1,
+        backoffMs,
+      });
+      await sleep(backoffMs);
     }
-
-    safeLogger.info('Claude API response received', {
-      flujo,
-      inputTokens: (message as any).usage.input_tokens,
-      outputTokens: (message as any).usage.output_tokens,
-    });
-
-    return (response as any).text;
-  } catch (error) {
-    safeLogger.error('Claude API error', {
-      error: error instanceof Error ? error.message : String(error),
-      flujo,
-    });
-
-    // Respuesta degradada
-    return 'Lo siento, no puedo procesar tu solicitud en este momento. ¿Deseas hablar con un operador?';
   }
+
+  // Todos los intentos fallaron
+  safeLogger.error('Claude API failed after all retries', {
+    error: lastError?.message,
+    flujo,
+    retries: MAX_RETRIES,
+  });
+
+  // Respuesta degradada
+  return 'Lo siento, no puedo procesar tu solicitud en este momento debido a problemas técnicos. ¿Deseas hablar con un operador?';
 }
 
 /**

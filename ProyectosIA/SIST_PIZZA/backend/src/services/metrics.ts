@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { register, Counter, Histogram, Gauge } from 'prom-client';
+import { register, Counter, Histogram, Gauge, collectDefaultMetrics } from 'prom-client';
 
 // HTTP Metrics
 export const httpRequestsTotal = new Counter({
@@ -12,7 +12,7 @@ export const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duración de requests HTTP en segundos',
   labelNames: ['method', 'route', 'status'],
-  buckets: [0.1, 0.5, 1, 2, 5],
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5],
 });
 
 // Business Metrics
@@ -73,6 +73,65 @@ export const cacheMisses = new Counter({
   labelNames: ['cache_name'],
 });
 
+// Claude/LLM Metrics
+export const claudeAPIRequests = new Counter({
+  name: 'claude_api_requests_total',
+  help: 'Total de requests a Claude API',
+  labelNames: ['flujo', 'status'],
+});
+
+export const claudeAPIErrors = new Counter({
+  name: 'claude_api_errors_total',
+  help: 'Total de errores en Claude API',
+  labelNames: ['flujo', 'error_type'],
+});
+
+export const claudeCircuitBreakerState = new Gauge({
+  name: 'claude_circuit_breaker_state',
+  help: 'Estado del circuit breaker de Claude (0=closed, 1=open)',
+});
+
+export const claudeCircuitBreakerFailures = new Gauge({
+  name: 'claude_circuit_breaker_failures',
+  help: 'Número de fallos consecutivos en Claude API',
+});
+
+export const claudeTokensUsed = new Counter({
+  name: 'claude_tokens_used_total',
+  help: 'Total de tokens consumidos en Claude API',
+  labelNames: ['type'], // 'input' o 'output'
+});
+
+export const claudeRequestDuration = new Histogram({
+  name: 'claude_request_duration_seconds',
+  help: 'Duración de requests a Claude API',
+  labelNames: ['flujo'],
+  buckets: [0.5, 1, 2, 5, 10, 30],
+});
+
+// Supabase/DB Metrics
+export const supabaseAPIErrors = new Counter({
+  name: 'supabase_api_errors_total',
+  help: 'Total de errores en Supabase API',
+  labelNames: ['tabla', 'operation'],
+});
+
+// Rate Limiting Metrics
+export const rateLimitExceeded = new Counter({
+  name: 'rate_limit_exceeded_total',
+  help: 'Total de requests bloqueados por rate limiting',
+  labelNames: ['limiter_type', 'endpoint'],
+});
+
+// Default labels & default metrics
+register.setDefaultLabels({
+  app: 'sist-pizza-backend',
+  version: process.env.APP_VERSION || 'dev',
+  commit: process.env.GIT_SHA || 'local',
+});
+// Nota: prom-client@15 ya no acepta la opción 'timeout' en collectDefaultMetrics
+collectDefaultMetrics({ register });
+
 // Export metrics endpoint
 const metricsRouter = Router();
 
@@ -87,32 +146,19 @@ metricsRouter.get('/metrics', async (req: Request, res: Response) => {
 
 // Middleware para tracking de requests HTTP
 export const metricsMiddleware = (req: Request, res: Response, next: any) => {
-  const startTime = Date.now();
-  const route = req.route?.path || req.path || 'unknown';
+  const start = process.hrtime.bigint();
 
-  // Middleware para capturar cuando response se envía
-  const originalSend = res.send;
-  res.send = function (data: any) {
-    const duration = (Date.now() - startTime) / 1000;
-    const status = res.statusCode;
+  res.on('finish', () => {
+    const end = process.hrtime.bigint();
+    const duration = Number(end - start) / 1e9; // seconds
+    const method = req.method;
+    const status = String(res.statusCode);
+    // Intentar usar patrón de ruta de Express; evitar IDs dinámicos como parte de la etiqueta
+    const routePath = (req.baseUrl || '') + (req.route?.path || 'unmatched');
 
-    httpRequestsTotal.inc({
-      method: req.method,
-      route,
-      status,
-    });
-
-    httpRequestDuration.observe(
-      {
-        method: req.method,
-        route,
-        status,
-      },
-      duration
-    );
-
-    return originalSend.call(this, data);
-  };
+    httpRequestsTotal.inc({ method, route: routePath, status });
+    httpRequestDuration.observe({ method, route: routePath, status }, duration);
+  });
 
   next();
 };

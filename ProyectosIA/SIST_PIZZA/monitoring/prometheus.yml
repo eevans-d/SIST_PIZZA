@@ -29,22 +29,20 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s
-
-  # PostgreSQL exporter
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres:5432']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
+        replacement: backend
 
-  # Redis exporter
-  - job_name: 'redis'
+  # PostgreSQL exporter (via prometheuscommunity/postgres-exporter)
+  - job_name: 'postgres_exporter'
     static_configs:
-      - targets: ['redis:6379']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
+      - targets: ['postgres-exporter:9187']
+
+  # Redis exporter (via oliver006/redis_exporter)
+  - job_name: 'redis_exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
 
   # Node exporter (if available)
   - job_name: 'node'

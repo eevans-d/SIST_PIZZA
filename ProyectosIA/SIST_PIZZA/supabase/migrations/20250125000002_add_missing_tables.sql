@@ -75,7 +75,9 @@ CREATE TABLE IF NOT EXISTS support_tickets (
   resolution_notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  resolved_at TIMESTAMPTZ
+  resolved_at TIMESTAMPTZ,
+  CONSTRAINT fk_support_tickets_user FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL,
+  CONSTRAINT fk_support_tickets_assignee FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_support_tickets_user ON support_tickets(user_id, created_at DESC);
@@ -99,7 +101,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   es_predeterminado BOOLEAN DEFAULT false,
   activo BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_payment_methods_user FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_payment_methods_user ON payment_methods(user_id, activo);
