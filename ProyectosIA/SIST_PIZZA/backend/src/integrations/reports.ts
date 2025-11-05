@@ -11,7 +11,6 @@ import { config } from '../config';
 import { logger } from '../lib/logger';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
-import { Readable } from 'stream';
 
 const supabase = createClient(config.supabase.url, config.supabase.serviceRoleKey);
 
@@ -274,9 +273,9 @@ export async function handleReporteDownload(
       formato === 'pdf' ? 'pdf' : 'xlsx'
     }`;
 
-    res.setHeader('Content-Type', 
-      formato === 'pdf' 
-        ? 'application/pdf' 
+    res.setHeader('Content-Type',
+      formato === 'pdf'
+        ? 'application/pdf'
         : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

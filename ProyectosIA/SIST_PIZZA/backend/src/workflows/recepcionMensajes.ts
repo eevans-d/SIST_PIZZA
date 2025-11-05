@@ -43,7 +43,6 @@ export async function procesarMensajeEntrante(
       messageLength: mensajeUsuario.length,
     });
 
-    const supabase = getSupabaseClient();
 
     // ========================================================================
     // 1. BUSCAR O CREAR CLIENTE
@@ -62,7 +61,7 @@ export async function procesarMensajeEntrante(
       };
     }
 
-    const clienteRedactado = redactarCliente(cliente);
+  const _clienteRedactado = redactarCliente(cliente);
 
     // ========================================================================
     // 2. VALIDAR HORARIO

@@ -141,7 +141,7 @@ export const modoService = {
     message: string;
     isDuplicate: boolean;
   }> {
-    const { operation_id, reference, status, amount, timestamp } = webhook;
+  const { operation_id, reference, status, amount, timestamp: _timestamp } = webhook;
 
     // 1. Validar duplicado
     if (isDuplicate(operation_id)) {

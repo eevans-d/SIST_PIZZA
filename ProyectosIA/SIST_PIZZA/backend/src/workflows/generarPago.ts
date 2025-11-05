@@ -115,7 +115,7 @@ export async function generarPago(
  */
 export async function confirmarPago(
   pagoId: string,
-  operationId: string
+  _operationId: string
 ): Promise<{ exito: boolean; mensaje: string }> {
   try {
     const supabase = getSupabaseClient();

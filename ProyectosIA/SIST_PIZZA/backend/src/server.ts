@@ -299,7 +299,7 @@ export function createApp(): Express {
     error: any,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
   ) => {
     // Log del error
     const statusCode = error.statusCode || error.status || 500;

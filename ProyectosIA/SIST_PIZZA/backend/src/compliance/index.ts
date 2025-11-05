@@ -244,7 +244,7 @@ export class ComplianceValidator {
    */
   static validateConsent(
     consent: ConsentRecord,
-    requiredFor: DataProcessingCategory
+    _requiredFor: DataProcessingCategory
   ): boolean {
     return consent.given && consent.givenAt < new Date();
   }

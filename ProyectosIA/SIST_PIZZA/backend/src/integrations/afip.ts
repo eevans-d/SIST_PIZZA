@@ -21,7 +21,7 @@ interface DNIValidation {
   cached_at?: string;
 }
 
-const AFIP_API = 'https://servicios1.afip.gob.ar/wfxCert/service.asmx';
+const _AFIP_API = 'https://servicios1.afip.gob.ar/wfxCert/service.asmx';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas
 let lastRequestTime = 0;
 
@@ -183,7 +183,7 @@ export async function createDNIValidationTable() {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
-      CREATE INDEX IF NOT EXISTS idx_dni_validations_cached_at 
+      CREATE INDEX IF NOT EXISTS idx_dni_validations_cached_at
         ON dni_validations(cached_at);
     `,
   });

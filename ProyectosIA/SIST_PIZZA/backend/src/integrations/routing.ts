@@ -105,7 +105,7 @@ async function obtenerCoordenadas(
  */
 async function encontrarRepartidorOptimo(
   zona: string,
-  coordenadas: { lat: number; lng: number }
+  _coordenadas: { lat: number; lng: number }
 ): Promise<{ id: string; nombre: string } | null> {
   try {
     // 1. Obtener repartidores disponibles en la zona
@@ -283,11 +283,11 @@ export async function createEntregasTable() {
           created_at TIMESTAMP DEFAULT NOW()
         );
 
-        CREATE INDEX IF NOT EXISTS idx_entregas_estado 
+        CREATE INDEX IF NOT EXISTS idx_entregas_estado
           ON entregas(estado);
-        CREATE INDEX IF NOT EXISTS idx_entregas_repartidor 
+        CREATE INDEX IF NOT EXISTS idx_entregas_repartidor
           ON entregas(repartidor_id);
-        CREATE INDEX IF NOT EXISTS idx_repartidores_zona 
+        CREATE INDEX IF NOT EXISTS idx_repartidores_zona
           ON repartidores(zona, disponible);
       `,
     });

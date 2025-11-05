@@ -201,7 +201,7 @@ export class ChatwootService {
    */
   private enqueueConversation(
     clienteTelefono: string,
-    clienteNombre: string
+    _clienteNombre: string
   ): void {
     safeLogger.info('Conversation queued for retry', {
       telefonoUltimos4: `***${clienteTelefono.slice(-4)}`,
