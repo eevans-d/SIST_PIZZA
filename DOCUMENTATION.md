@@ -97,3 +97,6 @@ Es un **auditor de código automático** que se ejecuta cada vez que se actualiz
 
 *   **Falsos Positivos:** La IA puede cometer errores. Si consideras que un hallazgo es incorrecto, simplemente ignóralo y, si quieres, deja un comentario en el PR para que el equipo esté al tanto.
 *   **Pull Requests desde un "Fork":** Por razones de seguridad, si tu PR proviene de un repositorio personal (un "fork"), el análisis no se ejecutará automáticamente. Un `maintainer` del repositorio principal deberá aprobar su ejecución manually.
+
+
+# CI/CD Setup Completed
