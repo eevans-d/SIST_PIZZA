@@ -5,7 +5,7 @@ Este documento resume el estado del repositorio tras el merge a `main`, los chec
 ## Resumen
 - PR de integración fusionado en modo Squash a `main` sin conflictos.
 - Build TypeScript y test suite locales en verde; linter con advertencias no bloqueantes en local.
-- Workflow de CI (`.github/workflows/ci.yml`) existe en el repo; la API de GitHub actualmente lista solo `qwen-analyzer.yml` como activo. Puede requerir habilitar Actions/Workflows en el repo o un push subsiguiente para que aparezca.
+- Workflow de CI (`.github/workflows/ci.yml`) existe en el repo y es el único relevante. Si no aparece en la pestaña Actions, habilitá Actions en el repo o hacé un push menor para que GitHub lo indexe.
 - No hay secretos configurados en el repo (p.ej. `SUPABASE_SERVICE_ROLE_KEY`), por lo que la suite RLS seguirá en `skipped` hasta que se agregue.
 
 ## Estado de main (local verificado)

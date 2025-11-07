@@ -9,6 +9,10 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
     strategy:
       matrix:
@@ -36,8 +40,13 @@ jobs:
       - name: Run linter
         run: cd backend && npm run lint -- --max-warnings=0
 
-      - name: Run tests
-        run: cd backend && npm run test:coverage
+      - name: Run tests (with Supabase secrets if present)
+        run: |
+          cd backend
+          echo "SUPABASE_URL=${SUPABASE_URL:+[set]}"
+          echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:+[set]}"
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:+[set]}"
+          npm run test:coverage
 
       - name: Upload backend coverage report
         if: always()

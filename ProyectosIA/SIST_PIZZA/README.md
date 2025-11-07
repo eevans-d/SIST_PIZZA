@@ -1,5 +1,7 @@
 # 🍕 SIST Pizza - Sistema de Gestión de Pizzería
 
+[![CI - Gates Fase 1](https://github.com/eevans-d/SIST_PIZZA/actions/workflows/ci.yml/badge.svg)](https://github.com/eevans-d/SIST_PIZZA/actions/workflows/ci.yml)
+
 Sistema integral de gestión para pizzería con integración WhatsApp. Recibe pedidos a través de WhatsApp, los procesa automáticamente a través de N8N, y los persiste en Supabase PostgreSQL.
 
 **Estado Actual:** ✅ Backend 100% | ✅ Tests 100% | ✅ Documentación 100%  
@@ -9,6 +11,7 @@ Sistema integral de gestión para pizzería con integración WhatsApp. Recibe pe
 
 **Léo esto primero:** [`MASTER_BLUEPRINT.md`](./MASTER_BLUEPRINT.md) (5 minutos)  
 **Luego ejecuto:** [`docs/03-setup-sql/EJECUTAR_SQL_AHORA.md`](./docs/03-setup-sql/EJECUTAR_SQL_AHORA.md) (11 minutos)  
+**Si vas a usar Supabase en la nube:** [`GUIA_SUPABASE_END_TO_END.md`](./GUIA_SUPABASE_END_TO_END.md) (25–40 minutos, completo)  
 **Finalmente:** Elige una ruta en [`docs/01-inicio/INDEX.md`](./docs/01-inicio/INDEX.md)
 
 ## 📋 Tabla de Contenidos
