@@ -1,0 +1,71 @@
+name: DB - Aplicar migraciones Supabase
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Solo validar conexión (no aplicar cambios)"
+        required: false
+        default: "false"
+  push:
+    paths:
+      - "supabase/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-migrate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate:
+    name: Ejecutar migraciones con psql
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      PGSSLMODE: require
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar secreto DATABASE_URL
+        run: |
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "Falta el secreto SUPABASE_DATABASE_URL en el repo (Settings → Secrets and variables → Actions)." 1>&2
+            exit 1
+          fi
+          # Sanitizar y mostrar host/usuario (sin password)
+          SANITIZED=$(echo "$DATABASE_URL" | sed -E 's#(postgresql://[^:]+:)[^@]+(@.*)#\1***\2#')
+          echo "Conectando a: ${SANITIZED}"
+
+      - name: Instalar cliente PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Validar conexión
+        run: |
+          psql "$DATABASE_URL" -c "SELECT version();" -v ON_ERROR_STOP=1
+
+      - name: Migrar (SUPABASE_ALL_IN_ONE.sql)
+        if: inputs.dry_run != 'true'
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/SUPABASE_ALL_IN_ONE.sql | tee migration_output.txt
+
+      - name: Analítica post-migración (tablas y seeds)
+        if: inputs.dry_run != 'true'
+        run: |
+          echo "== Tablas en public =="
+          psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';" | xargs echo "Tablas:"
+          echo "== Items en menu_items =="
+          psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM menu_items;" | xargs echo "Menu items:"
+
+      - name: Publicar artefacto (salida)
+        if: inputs.dry_run != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-migration-output
+          path: |
+            migration_output.txt
+            supabase/SUPABASE_ALL_IN_ONE.sql
