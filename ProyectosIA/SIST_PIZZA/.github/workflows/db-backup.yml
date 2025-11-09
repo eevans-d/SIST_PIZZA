@@ -1,0 +1,105 @@
+name: DB - Backup Diario Supabase
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # 02:00 UTC cada día
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Ejecutar pg_dump y crear backup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar PostgreSQL client y utilidades
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client gzip
+
+      - name: Crear directorio de backups
+        run: mkdir -p backups
+
+      - name: Ejecutar pg_dump (backup completo)
+        env:
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_DATABASE_URL:-}" ]; then
+            echo "::error::Falta el secreto SUPABASE_DATABASE_URL"
+            exit 1
+          fi
+
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="backups/sist_pizza_backup_${TIMESTAMP}.sql"
+
+          echo "Iniciando backup a ${BACKUP_FILE}..."
+
+          pg_dump \
+            "$SUPABASE_DATABASE_URL" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --schema=public \
+            --compress=9 \
+            --format=custom \
+            > "${BACKUP_FILE}.gz"
+
+          ls -lh "${BACKUP_FILE}.gz"
+
+          # Calcular checksum
+          SHA256=$(sha256sum "${BACKUP_FILE}.gz" | awk '{print $1}')
+          echo "SHA256: ${SHA256}" > "${BACKUP_FILE}.sha256"
+
+          echo "Backup completado exitosamente"
+          echo "Checksum: ${SHA256}"
+
+          # Guardar en environment para siguiente step
+          echo "BACKUP_FILE=${BACKUP_FILE}.gz" >> $GITHUB_ENV
+          echo "BACKUP_SHA256=${SHA256}" >> $GITHUB_ENV
+
+      - name: Generar reporte de integridad
+        env:
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+
+          echo "=== Reporte de Backup ===" > backups/BACKUP_REPORT.txt
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> backups/BACKUP_REPORT.txt
+          echo "Archivo: $BACKUP_FILE" >> backups/BACKUP_REPORT.txt
+          echo "Tamaño: $(du -h $BACKUP_FILE | cut -f1)" >> backups/BACKUP_REPORT.txt
+          echo "Checksum SHA256: $BACKUP_SHA256" >> backups/BACKUP_REPORT.txt
+          echo "" >> backups/BACKUP_REPORT.txt
+
+          echo "--- Validación rápida ---" >> backups/BACKUP_REPORT.txt
+          echo "Verificando archivo comprimido..." >> backups/BACKUP_REPORT.txt
+          file $BACKUP_FILE >> backups/BACKUP_REPORT.txt || true
+          echo "" >> backups/BACKUP_REPORT.txt
+
+          echo "--- Info de la base ---" >> backups/BACKUP_REPORT.txt
+          psql "$SUPABASE_DATABASE_URL" -t -c "SELECT COUNT(*) as tablas FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';" >> backups/BACKUP_REPORT.txt 2>&1 || true
+
+          cat backups/BACKUP_REPORT.txt
+
+      - name: Subir backup como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup
+          path: |
+            backups/sist_pizza_backup_*.sql.gz
+            backups/sist_pizza_backup_*.sha256
+            backups/BACKUP_REPORT.txt
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Notificar en caso de fallo
+        if: failure()
+        run: |
+          echo "::error::Backup diario falló. Revisar logs."
+          exit 1
