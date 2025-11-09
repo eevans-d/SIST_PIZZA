@@ -88,3 +88,43 @@ Ver detalles en: [`GUIA_SUPABASE_END_TO_END.md`](../GUIA_SUPABASE_END_TO_END.md)
 
 **Última actualización:** 2025-11-07  
 **Responsable:** Equipo SIST_PIZZA
+
+---
+
+## ✅ Verificación rápida de seeds
+
+Ejecutá en el SQL Editor de Supabase o con psql:
+
+```sql
+-- Conteos esperados (mínimos) tras seeds
+SELECT 'menu_items' AS tabla, COUNT(*) AS filas FROM public.menu_items
+UNION ALL
+SELECT 'clientes', COUNT(*) FROM public.clientes;
+```
+
+Resultados esperados (mínimos):
+- `menu_items` ≥ 18
+- `clientes` ≥ 5
+
+Si no alcanzan los mínimos, re‑ejecutá de forma segura (idempotente):
+- Opción A: `supabase/SUPABASE_ALL_IN_ONE.sql` (incluye seeds con ON CONFLICT/IF NOT EXISTS)
+- Opción B: solo `20250115000001_seed_data.sql`
+
+## 📈 Baseline de performance (opcional)
+
+Usá el snapshot listo en `supabase/performance_baseline.sql` para:
+- Ver conteos y tamaños por tabla
+- Listado de índices en `public`
+- Porcentaje de `idx_scan` vs `seq_scan`
+- EXPLAIN ANALYZE de una query crítica (últimos 7 días, estado entregado)
+
+Ejecución con psql:
+
+```bash
+psql "$DATABASE_URL" -f supabase/performance_baseline.sql | less -S
+```
+
+Indicadores rápidos:
+- Evitar `Seq Scan` en tablas grandes de uso frecuente
+- Confirmar que aparecen índices compuestos/GIN esperados
+- Tiempos de ejecución bajos (ms) en la query crítica
