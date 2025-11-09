@@ -1,0 +1,41 @@
+name: CI - Baseline de Performance (manual/diario)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC diario
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Ejecutar snapshot de performance
+        env:
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DATABASE_URL:-}" ]; then
+            echo "::error::Falta el secreto SUPABASE_DATABASE_URL"; exit 1; fi
+          mkdir -p artifacts
+          echo "Conectividad..."
+          psql "$SUPABASE_DATABASE_URL" -c "SELECT version();" | tee artifacts/00_version.txt
+          echo "Ejecutando performance_baseline.sql..."
+          psql "$SUPABASE_DATABASE_URL" -f supabase/performance_baseline.sql | tee artifacts/01_performance_baseline.txt
+          echo "Snapshot de tablas e índices..."
+          psql "$SUPABASE_DATABASE_URL" -c "SELECT tablename, indexname FROM pg_indexes WHERE schemaname='public' ORDER BY tablename, indexname;" | tee artifacts/02_indices_list.txt
+
+      - name: Publicar artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-baseline
+          path: artifacts
+          if-no-files-found: error
